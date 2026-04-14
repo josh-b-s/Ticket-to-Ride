@@ -36,10 +36,13 @@ class Game:
             Route("King's Cross", "Regent's Park", 3, "green"),
             Route("Buckingham Palace", "Big Ben", 2, "green"),
             Route("Globe Theatre", "Elephant & Castle", 2, "green"),
+            Route("Brick Lane", "The Charterhouse", 3, "green"),
 
 
             Route("King's Cross", "British Museum", 2, "black"),
             Route("Baker Street", "Hyde Park", 4, "black"),
+            Route("The Charterhouse", "St Paul's", 1, "black"),
+            Route("Tower of London", "Elephant & Castle", 4, "black"),
 
 
             Route("Regent's Park", "British Museum", 3, "yellow"),
@@ -48,10 +51,12 @@ class Game:
 
             Route("Baker Street", "British Museum", 4, "orange"),
             Route("Waterloo", "Elephant & Castle", 2, "orange"),
+            Route("Brick Lane", "St Paul's", 3, "orange"),
 
 
             Route("Buckingham Palace", "Piccadilly Circus", 2, "pink"),
             Route("Waterloo", "Globe Theatre", 2, "pink"),
+            Route("The Charterhouse", "King's Cross", 3, "pink"),
 
 
             Route("Baker Street", "Piccadilly Circus", 4),
@@ -62,30 +67,32 @@ class Game:
             Route("Globe Theatre", "Tower of London", 3),
 
 
-            Route("Hyde Park", "Piccadilly Circus", 2),  # double gray
-            Route("Hyde Park", "Buckingham Palace", 1), #orange yellow
-            Route("Piccadilly Circus", "Covent Garden", 1),  # green yellow
-            Route("Piccadilly Circus", "Trafalgar Square", 1), #blue orange
-            Route("Covent Garden", "British Museum", 1), #double gray
-            Route("Covent Garden", "Trafalgar Square", 1), #black pink
-            Route("Globe Theatre", "St Paul's", 1), #double gray
-            Route("St Paul's", "Tower of London", 3), #yellow pink
-            Route("St Paul's", "Covent Garden", 3), #double gray
+            Route("Hyde Park", "Piccadilly Circus", 2),
+            Route("Hyde Park", "Piccadilly Circus", 2, "blue"), 
 
+            Route("Hyde Park", "Buckingham Palace", 1, "orange"),
+            Route("Hyde Park", "Buckingham Palace", 1, "yellow"), 
 
+            Route("Piccadilly Circus", "Covent Garden", 1, "green"),
+            Route("Piccadilly Circus", "Covent Garden", 1, "yellow"), 
 
+            Route("Piccadilly Circus", "Trafalgar Square", 1, "blue"),
+            Route("Piccadilly Circus", "Trafalgar Square", 1, "orange"), 
 
+            Route("Covent Garden", "British Museum", 1),
+            Route("Covent Garden", "British Museum", 1),
 
+            Route("Covent Garden", "Trafalgar Square", 1, "black"),
+            Route("Covent Garden", "Trafalgar Square", 1, "pink"), 
 
+            Route("Globe Theatre", "St Paul's", 1),
+            Route("Globe Theatre", "St Paul's", 1), 
 
-            Route("Brick Lane", "St Paul's", 3, "orange"),
-            Route("Brick Lane", "The Charterhouse", 3, "green"),
+            Route("St Paul's", "Tower of London", 3, "yellow"),
+            Route("St Paul's", "Tower of London", 3, "pink"), 
 
-            Route("Tower of London", "Elephant & Castle", 4, "black"),
-
-
-            Route("The Charterhouse", "King's Cross", 3, "pink"),
-            Route("The Charterhouse", "St Paul's", 1, "black"),
+            Route("St Paul's", "Covent Garden", 3),
+            Route("St Paul's", "Covent Garden", 3),
         ]
 
     def add_player(self, name: str):
@@ -114,11 +121,11 @@ class Game:
         if self.players:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
 
-    def get_route(self, city_a: str, city_b: str):
-        for route in self.routes:
-            if route.connects(city_a, city_b):
-                return route
-        return None
+    def get_routes(self, city_a: str, city_b: str):
+        return [
+            r for r in self.routes
+            if r.connects(city_a, city_b)
+        ]
 
     def claim_route(self, route: Route):
         player = self.current_player()

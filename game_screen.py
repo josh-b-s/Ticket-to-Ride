@@ -2,6 +2,8 @@ import math
 import tkinter as tk
 from tkinter import messagebox
 
+from helpers import offset_line
+
 
 class GameScreen:
     def __init__(self, root, game):
@@ -66,22 +68,45 @@ class GameScreen:
             if length == 0:
                 continue
 
-            ux = dx / length
-            uy = dy / length
+            # ---- FIND PARALLEL ROUTES ----
+            key = tuple(sorted([route.city_a, route.city_b]))
 
-            segments = route.length
+            same_routes = [
+                (i, r) for i, r in enumerate(self.game.routes)
+                if tuple(sorted([r.city_a, r.city_b])) == key
+            ]
+
+            for group_index, (original_i, r) in enumerate(same_routes):
+                if original_i == idx:
+                    break
+
+            offset = (group_index - (len(same_routes) - 1) / 2) * 12
+
+            # apply offset
+            x1o, y1o, x2o, y2o = offset_line(x1, y1, x2, y2, offset)
+
+            # ---- RECOMPUTE DIRECTION AFTER OFFSET (IMPORTANT FIX) ----
+            dxo = x2o - x1o
+            dyo = y2o - y1o
+            length_o = math.sqrt(dxo * dxo + dyo * dyo)
+
+            if length_o == 0:
+                continue
+
+            ux = dxo / length_o
+            uy = dyo / length_o
 
             # color
             if route.is_claimed():
                 color = self.player_colors.get(route.claimed_by, "black")
             else:
-                color = route.color
+                color = route.color if route.color else "lightgray"
 
             tag = f"route_{idx}"
 
-            # CLICK HITBOX (must exist BEFORE binding)
+            # clickable hitbox
             self.canvas.create_line(
-                x1, y1, x2, y2,
+                x1o, y1o, x2o, y2o,
                 fill="",
                 width=20,
                 tags=(tag,)
@@ -93,21 +118,21 @@ class GameScreen:
                 lambda e, r=route: self.on_route_click(r)
             )
 
-            # ---- FIXED SEGMENT DRAWING ----
-            # evenly divide whole line into segments
-            segment_gap = length / segments
+            # ---- SEGMENTS (CENTERED + CORRECT) ----
+            segments = route.length
+            segment_gap = length_o / segments
             segment_len = segment_gap * 0.6
-            offset = (segment_gap - segment_len) / 2
+            offset_in = (segment_gap - segment_len) / 2
 
             for i in range(segments):
-                t_start = segment_gap * i + offset
+                t_start = segment_gap * i + offset_in
                 t_end = t_start + segment_len
 
-                sx = x1 + ux * t_start
-                sy = y1 + uy * t_start
+                sx = x1o + ux * t_start
+                sy = y1o + uy * t_start
 
-                ex = x1 + ux * t_end
-                ey = y1 + uy * t_end
+                ex = x1o + ux * t_end
+                ey = y1o + uy * t_end
 
                 self.canvas.create_line(
                     sx, sy, ex, ey,
