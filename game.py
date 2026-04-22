@@ -2,6 +2,8 @@ from player import Player
 from board import Board
 from route import Route
 from train_deck import TrainDeck
+from destination_ticket import DestinationTicket
+import random
 
 
 class Game:
@@ -20,6 +22,7 @@ class Game:
 
         self.board = Board()
         self.train_deck = TrainDeck()
+        self.destination_deck = []
 
         self.last_round_triggered = False
         self.last_player_index = None
@@ -69,6 +72,8 @@ class Game:
             player.train_cards.clear()
             player.destination_tickets.clear()
 
+        self.build_destination_deck()
+        self.deal_initial_tickets()
         self.deal_initial_train_cards()
 
     def deal_initial_train_cards(self):
@@ -84,8 +89,13 @@ class Game:
         return self.players[self.current_player_index]
 
     def next_player(self):
-        if self.players:
-            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        if not self.players:
+            return
+
+        self.current_player_index = (self.current_player_index + 1) % len(self.players)
+
+        if self.last_round_triggered and self.current_player_index == self.last_player_index:
+            self.end_game()
 
     def draw_train_card_from_deck(self, player):
         card = self.train_deck.draw()
@@ -160,5 +170,68 @@ class Game:
         player.trains -= route.length
         player.score += self.ROUTE_POINTS.get(route.length, route.length)
 
+        if player.trains <= 2 and not self.last_round_triggered:
+            self.last_round_triggered = True
+            self.last_player_index = self.current_player_index
+
+
         self.next_player()
         return True, "Route claimed."
+
+    def build_destination_deck(self):
+        self.destination_deck = [
+            DestinationTicket("King's Cross", "Waterloo", 5),
+            DestinationTicket("Baker Street", "Big Ben", 5),
+            DestinationTicket("Regent's Park", "Tower of London", 8),
+            DestinationTicket("Hyde Park", "Brick Lane", 7),
+            DestinationTicket("Buckingham Palace", "Elephant & Castle", 6),
+            DestinationTicket("Covent Garden", "St Paul's", 4),
+        ]
+        random.shuffle(self.destination_deck)
+
+    def deal_initial_tickets(self):
+        for player in self.players:
+            for _ in range(2):
+                if self.destination_deck:
+                    player.destination_tickets.append(self.destination_deck.pop())
+
+    def end_game(self):
+        self.calculate_destination_scores()
+
+        winner = max(self.players, key=lambda p: p.score)
+        print("Game Over!")
+        print(f"Winner: {winner.name} with {winner.score} points")
+
+    def calculate_destination_scores(self):
+        for player in self.players:
+            for ticket in player.destination_tickets:
+                if self.is_connected(player, ticket.city_a, ticket.city_b):
+                    player.score += ticket.points
+                else:
+                    player.score -= ticket.points
+
+    def is_connected(self, player, start, end):
+        visited = set()
+        return self._dfs(player, start, end, visited)
+
+    def _dfs(self, player, current, target, visited):
+        if current == target:
+            return True
+
+        visited.add(current)
+
+        for route in self.routes:
+            if route.owner_player != player:
+                continue
+
+            next_city = None
+            if route.city_a == current:
+                next_city = route.city_b
+            elif route.city_b == current:
+                next_city = route.city_a
+
+            if next_city and next_city not in visited:
+                if self._dfs(player, next_city, target, visited):
+                    return True
+
+        return False

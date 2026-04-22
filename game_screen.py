@@ -83,6 +83,10 @@ class GameScreen:
         self.offer_frame = tk.Frame(self.side_frame)
         self.offer_frame.pack(fill="x")
 
+        tk.Label(self.side_frame, text="Destination Tickets:").pack(anchor="w", pady=(12, 4))
+        self.ticket_list = tk.Listbox(self.side_frame, height=6)
+        self.ticket_list.pack(fill="x")
+
     def update_sidebar(self, message=""):
         current = self.game.current_player()
         self.current_label.config(
@@ -136,6 +140,11 @@ class GameScreen:
                 state=state
             )
             btn.pack(fill="x", pady=1)
+
+        self.ticket_list.delete(0, "end")
+        if current:
+            for ticket in current.destination_tickets:
+                self.ticket_list.insert("end", str(ticket))
 
     def start_draw_action(self):
         if self.draw_mode:
