@@ -7,53 +7,35 @@ import random
 
 
 class Game:
-    ROUTE_POINTS = {
-        1: 1,
-        2: 2,
-        3: 4,
-        4: 7,
-        5: 10,
-        6: 15,
-    }
+    ROUTE_POINTS = {1: 1, 2: 2, 3: 4, 4: 7, 5: 10, 6: 15}
 
     def __init__(self):
         self.players = []
         self.current_player_index = 0
-
         self.board = Board()
         self.train_deck = TrainDeck()
         self.destination_deck = []
-
         self.last_round_triggered = False
         self.last_player_index = None
 
     @property
-    def cities(self):
-        return self.board.cities
+    def cities(self): return self.board.cities
 
     @property
-    def routes(self):
-        return self.board.routes
+    def routes(self): return self.board.routes
 
-    def get_routes(self, city_a: str, city_b: str):
-        return self.board.get_routes(city_a, city_b)
+    def get_routes(self, city_a, city_b): return self.board.get_routes(city_a, city_b)
+    def get_bounds(self): return self.board.get_bounds()
 
-    def get_bounds(self):
-        return self.board.get_bounds()
-
-    def add_player(self, name: str):
+    def add_player(self, name):
         name = name.strip()
-        if not name:
+        if not name or any(p.name.lower() == name.lower() for p in self.players):
             return None
-        if any(p.name.lower() == name.lower() for p in self.players):
-            return None
-
         player = Player(name)
         self.players.append(player)
         return player
 
-    def get_players(self):
-        return self.players
+    def get_players(self): return self.players
 
     def start(self):
         if len(self.players) < 2:
@@ -61,79 +43,60 @@ class Game:
 
         self.board = Board()
         self.train_deck = TrainDeck()
-
         self.current_player_index = 0
         self.last_round_triggered = False
         self.last_player_index = None
 
-        for player in self.players:
-            player.score = 0
-            player.trains = 45
-            player.train_cards.clear()
-            player.destination_tickets.clear()
+        for p in self.players:
+            p.score = 0
+            p.trains = 45
+            p.train_cards.clear()
+            p.destination_tickets.clear()
 
         self.build_destination_deck()
         self.deal_initial_tickets()
         self.deal_initial_train_cards()
 
     def deal_initial_train_cards(self):
-        for player in self.players:
+        for p in self.players:
             for _ in range(4):
                 card = self.train_deck.draw()
-                if card is not None:
-                    player.train_cards.append(card)
+                if card:
+                    p.train_cards.append(card)
 
     def current_player(self):
-        if not self.players:
-            return None
-        return self.players[self.current_player_index]
+        return self.players[self.current_player_index] if self.players else None
 
     def next_player(self):
         if not self.players:
             return
-
         self.current_player_index = (self.current_player_index + 1) % len(self.players)
-
         if self.last_round_triggered and self.current_player_index == self.last_player_index:
             self.end_game()
 
     def draw_train_card_from_deck(self, player):
         card = self.train_deck.draw()
-        if card is None:
-            return None
-
-        player.train_cards.append(card)
+        if card:
+            player.train_cards.append(card)
         return card
 
     def draw_train_card_from_face_up(self, player, index):
         card = self.train_deck.draw_face_up(index)
-        if card is None:
-            return None
-
-        player.train_cards.append(card)
+        if card:
+            player.train_cards.append(card)
         return card
 
     def select_cards_for_route(self, player, route, chosen_color=None):
         required_color = route.color if route.color is not None else chosen_color
-
         if required_color is None:
             return None
 
-        chosen = []
+        chosen = [c for c in player.train_cards if c.color == required_color]
+        if len(chosen) >= route.length:
+            return chosen[:route.length]
 
-        for card in player.train_cards:
-            if card.color == required_color:
-                chosen.append(card)
-                if len(chosen) == route.length:
-                    return chosen
-
-        for card in player.train_cards:
-            if card.is_locomotive():
-                chosen.append(card)
-                if len(chosen) == route.length:
-                    return chosen
-
-        return None
+        chosen.extend(c for c in player.train_cards if c.is_locomotive())
+        return chosen[:route.length] if len(chosen) >= route.length else None
 
     def remove_cards_from_hand(self, player, cards):
         for card in cards:
@@ -143,18 +106,12 @@ class Game:
         player = self.current_player()
         if player is None:
             return False, "No current player."
-
         if route.is_claimed():
             return False, "That route is already claimed."
 
-        same_routes = [
-            r for r in self.routes
-            if {r.city_a, r.city_b} == {route.city_a, route.city_b}
-        ]
-
-        if len(self.players) <= 3:
-            if any(r.is_claimed() for r in same_routes):
-                return False, "Route blocked in 2–3 player game."
+        same_routes = [r for r in self.routes if {r.city_a, r.city_b} == {route.city_a, route.city_b}]
+        if len(self.players) <= 3 and any(r.is_claimed() for r in same_routes):
+            return False, "Route blocked in 2–3 player game."
 
         if player.trains < route.length:
             return False, "Not enough trains."
@@ -174,7 +131,6 @@ class Game:
             self.last_round_triggered = True
             self.last_player_index = self.current_player_index
 
-
         self.next_player()
         return True, "Route claimed."
 
@@ -190,48 +146,34 @@ class Game:
         random.shuffle(self.destination_deck)
 
     def deal_initial_tickets(self):
-        for player in self.players:
+        for p in self.players:
             for _ in range(2):
                 if self.destination_deck:
-                    player.destination_tickets.append(self.destination_deck.pop())
-
-    def end_game(self):
-        self.calculate_destination_scores()
-
-        winner = max(self.players, key=lambda p: p.score)
-        print("Game Over!")
-        print(f"Winner: {winner.name} with {winner.score} points")
+                    p.destination_tickets.append(self.destination_deck.pop())
 
     def calculate_destination_scores(self):
         for player in self.players:
             for ticket in player.destination_tickets:
-                if self.is_connected(player, ticket.city_a, ticket.city_b):
-                    player.score += ticket.points
-                else:
-                    player.score -= ticket.points
+                player.score += ticket.points if self.is_connected(player, ticket.city_a, ticket.city_b) else -ticket.points
 
     def is_connected(self, player, start, end):
-        visited = set()
-        return self._dfs(player, start, end, visited)
+        return self._dfs(player, start, end, set())
 
     def _dfs(self, player, current, target, visited):
         if current == target:
             return True
-
         visited.add(current)
 
         for route in self.routes:
             if route.owner_player != player:
                 continue
-
-            next_city = None
-            if route.city_a == current:
-                next_city = route.city_b
-            elif route.city_b == current:
-                next_city = route.city_a
-
-            if next_city and next_city not in visited:
-                if self._dfs(player, next_city, target, visited):
-                    return True
-
+            next_city = route.city_b if route.city_a == current else route.city_a if route.city_b == current else None
+            if next_city and next_city not in visited and self._dfs(player, next_city, target, visited):
+                return True
         return False
+
+    def end_game(self):
+        self.calculate_destination_scores()
+        winner = max(self.players, key=lambda p: p.score)
+        print("Game Over!")
+        print(f"Winner: {winner.name} with {winner.score} points")

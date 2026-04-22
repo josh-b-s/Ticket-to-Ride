@@ -1,15 +1,14 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Route:
-    def __init__(self, city_a, city_b, length, color=None):
-        self.city_a = city_a
-        self.city_b = city_b
-        self.length = length
-        self.color = color
-
-        self.owner_player = None  # single source of truth
+    city_a: str
+    city_b: str
+    length: int
+    color: Optional[str] = None
+    owner_player: Optional["Player"] = None
 
     def is_claimed(self):
         return self.owner_player is not None

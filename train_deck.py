@@ -4,22 +4,15 @@ from train_card import TrainCard
 
 class TrainDeck:
     def __init__(self):
-        self.draw_pile = []
+        self.draw_pile = [
+            TrainCard(color)
+            for color in TrainCard.COLORS
+            for _ in range(12)
+        ] + [TrainCard("locomotive") for _ in range(14)]
         self.discard_pile = []
         self.face_up = []
-
-        self._build_deck()
-        self._deal_face_up()
-
-    def _build_deck(self):
-        for color in TrainCard.COLORS:
-            for _ in range(12):
-                self.draw_pile.append(TrainCard(color))
-
-        for _ in range(14):
-            self.draw_pile.append(TrainCard("locomotive"))
-
         random.shuffle(self.draw_pile)
+        self._deal_face_up()
 
     def _deal_face_up(self):
         self.face_up = [self.draw() for _ in range(5)]
@@ -31,36 +24,24 @@ class TrainDeck:
     def draw(self):
         if not self.draw_pile:
             self._reshuffle()
-
-        if not self.draw_pile:
-            return None
-
-        return self.draw_pile.pop()
+        return self.draw_pile.pop() if self.draw_pile else None
 
     def draw_face_up(self, index):
-        if index < 0 or index >= len(self.face_up):
+        if index < 0 or index >= len(self.face_up) or self.face_up[index] is None:
             return None
-
         card = self.face_up[index]
-        if card is None:
-            return None
-
         self.face_up[index] = self.draw()
         self._fix_locomotives()
         return card
 
     def discard(self, cards):
-        for card in cards:
-            if card is not None:
-                self.discard_pile.append(card)
+        self.discard_pile.extend(c for c in cards if c is not None)
 
     def _reshuffle(self):
-        if not self.discard_pile:
-            return
-
-        self.draw_pile = self.discard_pile[:]
-        self.discard_pile.clear()
-        random.shuffle(self.draw_pile)
+        if self.discard_pile:
+            self.draw_pile = self.discard_pile[:]
+            self.discard_pile.clear()
+            random.shuffle(self.draw_pile)
 
     def _fix_locomotives(self):
         safety = 0
@@ -68,9 +49,7 @@ class TrainDeck:
             safety += 1
             if safety > 10:
                 break
-
             self.discard(self.face_up)
             self.face_up = [self.draw() for _ in range(5)]
-
             if all(card is None for card in self.face_up):
                 break
