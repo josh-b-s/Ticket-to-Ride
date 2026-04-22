@@ -26,11 +26,13 @@ class Game:
     def add_player(self, name: str):
         name = name.strip()
         if not name:
-            return False
+            return None
         if any(p.name.lower() == name.lower() for p in self.players):
-            return False
-        self.players.append(Player(name))
-        return True
+            return None
+
+        player = Player(name)
+        self.players.append(player)
+        return player
 
     def get_players(self):
         return self.players
@@ -61,6 +63,7 @@ class Game:
             return False, "Not enough trains."
 
         route.claimed_by = player.name
+        route.claimed_color = player.color or "black"
         player.trains -= route.length
         player.score += route.length
         self.next_player()

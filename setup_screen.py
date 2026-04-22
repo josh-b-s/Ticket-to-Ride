@@ -5,31 +5,63 @@ from game_screen import GameScreen
 
 
 class SetupScreen:
+    PLAYER_SLOTS = [
+        ("red", "Red"),
+        ("yellow", "Yellow"),
+        ("green", "Green"),
+        ("black", "Black"),
+        ("blue", "Blue"),
+    ]
+
     def __init__(self, root, game):
         self.root = root
         self.game = game
-        self.game_screen = None
 
         self.frame = tk.Frame(self.root, padx=20, pady=20)
         self.frame.pack(fill="both", expand=True)
 
-        tk.Label(self.frame, text="Ticket to Ride", font=("Arial", 18, "bold")).pack(pady=(0, 10))
-        tk.Label(self.frame, text="Enter 2 to 5 player names").pack(pady=(0, 10))
+        tk.Label(
+            self.frame,
+            text="Ticket to Ride",
+            font=("Arial", 18, "bold")
+        ).pack(pady=(0, 10))
+
+        tk.Label(
+            self.frame,
+            text="Enter 2 to 5 player names"
+        ).pack(pady=(0, 15))
+
+        self.input_row = tk.Frame(self.frame)
+        self.input_row.pack(pady=10)
 
         self.entries = []
-        for i in range(5):
-            row = tk.Frame(self.frame)
-            row.pack(fill="x", pady=5)
 
-            tk.Label(row, text=f"Player {i + 1}:", width=12, anchor="w").pack(side="left")
-            entry = tk.Entry(row)
-            entry.pack(side="left", fill="x", expand=True)
-            self.entries.append(entry)
+        for color_name, label in self.PLAYER_SLOTS:
+            col_frame = tk.Frame(self.input_row, padx=10)
+            col_frame.pack(side="left")
 
-        tk.Button(self.frame, text="Start Game", command=self.start_game).pack(pady=15)
+            tk.Label(
+                col_frame,
+                text=label,
+                font=("Arial", 10, "bold"),
+                fg=color_name
+            ).pack()
+
+            entry = tk.Entry(col_frame, width=12, justify="center")
+            entry.pack(pady=5)
+
+            self.entries.append((color_name, entry))
+
+        tk.Button(
+            self.frame,
+            text="Start Game",
+            command=self.start_game
+        ).pack(pady=20)
 
     def start_game(self):
-        names = [entry.get().strip() for entry in self.entries]
+        self.game.players.clear()
+
+        names = [entry.get().strip() for _, entry in self.entries]
         names = [name for name in names if name]
 
         if len(names) < 2:
@@ -40,10 +72,12 @@ class SetupScreen:
             messagebox.showerror("Error", "Player names must be unique.")
             return
 
-        self.game.players.clear()
-
-        for name in names[:5]:
-            self.game.add_player(name)
+        for color_name, entry in self.entries:
+            name = entry.get().strip()
+            if name:
+                player = self.game.add_player(name)
+                if player is not None:
+                    player.color = color_name
 
         try:
             self.game.start()
