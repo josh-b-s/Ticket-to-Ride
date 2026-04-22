@@ -12,12 +12,10 @@ class TrainDeck:
         self._deal_face_up()
 
     def _build_deck(self):
-        # 12 of each color
         for color in TrainCard.COLORS:
             for _ in range(12):
                 self.draw_pile.append(TrainCard(color))
 
-        # 14 locomotives
         for _ in range(14):
             self.draw_pile.append(TrainCard("locomotive"))
 
@@ -26,6 +24,9 @@ class TrainDeck:
     def _deal_face_up(self):
         self.face_up = [self.draw() for _ in range(5)]
         self._fix_locomotives()
+
+    def get_face_up(self):
+        return self.face_up
 
     def draw(self):
         if not self.draw_pile:
@@ -37,22 +38,39 @@ class TrainDeck:
         return self.draw_pile.pop()
 
     def draw_face_up(self, index):
+        if index < 0 or index >= len(self.face_up):
+            return None
+
         card = self.face_up[index]
+        if card is None:
+            return None
+
         self.face_up[index] = self.draw()
         self._fix_locomotives()
         return card
 
     def discard(self, cards):
-        self.discard_pile.extend(cards)
+        for card in cards:
+            if card is not None:
+                self.discard_pile.append(card)
 
     def _reshuffle(self):
         if not self.discard_pile:
             return
+
         self.draw_pile = self.discard_pile[:]
         self.discard_pile.clear()
         random.shuffle(self.draw_pile)
 
     def _fix_locomotives(self):
+        safety = 0
         while sum(1 for c in self.face_up if c and c.is_locomotive()) >= 3:
+            safety += 1
+            if safety > 10:
+                break
+
             self.discard(self.face_up)
             self.face_up = [self.draw() for _ in range(5)]
+
+            if all(card is None for card in self.face_up):
+                break
