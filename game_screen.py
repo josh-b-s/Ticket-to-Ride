@@ -12,6 +12,8 @@ class GameScreen:
 
         self.draw_mode = False
         self.draws_remaining = 0
+        self.ticket_mode = False
+        self.drawn_tickets = []
 
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill="both", expand=True)
@@ -78,6 +80,13 @@ class GameScreen:
             command=self.draw_from_deck
         )
         self.draw_deck_button.pack(fill="x", pady=2)
+
+        self.draw_ticket_button = tk.Button(
+            self.side_frame,
+            text="Draw Destination Tickets",
+            command=self.start_ticket_draw
+        )
+        self.draw_ticket_button.pack(fill="x", pady=2)
 
         tk.Label(self.side_frame, text="Face-up offer:").pack(anchor="w", pady=(12, 4))
         self.offer_frame = tk.Frame(self.side_frame)
@@ -219,8 +228,8 @@ class GameScreen:
         self.update_sidebar(message)
 
     def on_route_click(self, route):
-        if self.draw_mode:
-            messagebox.showinfo("Turn", "Finish drawing train cards first.")
+        if self.draw_mode or self.ticket_mode:
+            messagebox.showinfo("Turn", "Finish current action first.")
             return
 
         chosen_color = None
@@ -246,3 +255,48 @@ class GameScreen:
 
         self.map_view.draw()
         self.update_sidebar(message)
+
+    def start_ticket_draw(self):
+        if self.draw_mode or self.ticket_mode:
+            return
+
+        self.ticket_mode = True
+        self.drawn_tickets = self.game.draw_destination_tickets()
+
+        if not self.drawn_tickets:
+            messagebox.showinfo("Tickets", "No tickets left.")
+            self.ticket_mode = False
+            return
+
+        self.show_ticket_choice()
+
+    def show_ticket_choice(self):
+        win = tk.Toplevel(self.root)
+        win.title("Choose Tickets (keep at least 1)")
+
+        vars = []
+
+        for ticket in self.drawn_tickets:
+            var = tk.IntVar(value=1)  # default keep all
+            chk = tk.Checkbutton(win, text=str(ticket), variable=var)
+            chk.pack(anchor="w")
+            vars.append((var, ticket))
+
+        def confirm():
+            chosen = [t for v, t in vars if v.get() == 1]
+
+            player = self.game.current_player()
+            success, msg = self.game.choose_destination_tickets(
+                player, chosen, self.drawn_tickets
+            )
+
+            if not success:
+                messagebox.showinfo("Error", msg)
+                return
+
+            self.ticket_mode = False
+            self.drawn_tickets = []
+            win.destroy()
+            self.update_sidebar(msg)
+
+        tk.Button(win, text="Confirm", command=confirm).pack(pady=10)

@@ -177,3 +177,25 @@ class Game:
         winner = max(self.players, key=lambda p: p.score)
         print("Game Over!")
         print(f"Winner: {winner.name} with {winner.score} points")
+
+    def draw_destination_tickets(self, count=3):
+        drawn = []
+        for _ in range(count):
+            if self.destination_deck:
+                drawn.append(self.destination_deck.pop())
+        return drawn
+
+    def choose_destination_tickets(self, player, chosen, drawn):
+        # must keep at least 1
+        if not chosen or len(chosen) < 1:
+            return False, "You must keep at least 1 ticket."
+
+        for ticket in chosen:
+            player.destination_tickets.append(ticket)
+
+        # return unchosen to bottom of deck
+        remaining = [t for t in drawn if t not in chosen]
+        self.destination_deck = remaining + self.destination_deck
+
+        self.next_player()
+        return True, "Tickets chosen."
