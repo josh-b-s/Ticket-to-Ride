@@ -152,8 +152,14 @@ class Game:
 
     def calculate_destination_scores(self):
         for player in self.players:
+            player.completed_tickets = 0
+
             for ticket in player.destination_tickets:
-                player.score += ticket.points if self.is_connected(player, ticket.city_a, ticket.city_b) else -ticket.points
+                if self.is_connected(player, ticket.city_a, ticket.city_b):
+                    player.score += ticket.points
+                    player.completed_tickets += 1
+                else:
+                    player.score -= ticket.points
 
     def is_connected(self, player, start, end):
         return self._dfs(player, start, end, set())
@@ -173,9 +179,30 @@ class Game:
 
     def end_game(self):
         self.calculate_destination_scores()
-        winner = max(self.players, key=lambda p: p.score)
+
+        longest = {}
+        max_len = 0
+
+        for p in self.players:
+            length = self.longest_route_length(p)
+            longest[p] = length
+            max_len = max(max_len, length)
+
+        for p, length in longest.items():
+            if length == max_len:
+                p.score += 10
+
+        def sort_key(p):
+            return (
+                p.score,
+                p.completed_tickets,
+                longest[p]
+            )
+
+        winner = max(self.players, key=sort_key)
+
         print("Game Over!")
-        print(f"Winner: {winner.name} with {winner.score} points")
+        print(f"Winner: {winner.name} ({winner.score} points)")
 
     def draw_destination_tickets(self, count=3):
         drawn = []
@@ -205,3 +232,35 @@ class Game:
             if self.destination_deck:
                 drawn.append(self.destination_deck.pop())
         return drawn
+
+    def longest_route_length(self, player):
+        graph = {}
+
+        for route in self.routes:
+            if route.owner_player != player:
+                continue
+
+            a, b = route.city_a, route.city_b
+            graph.setdefault(a, []).append((b, route.length))
+            graph.setdefault(b, []).append((a, route.length))
+
+        best = 0
+        visited_edges = set()
+
+        def dfs(city, visited_nodes, length):
+            nonlocal best
+            best = max(best, length)
+
+            for nxt, weight in graph.get(city, []):
+                edge = tuple(sorted((city, nxt)))
+                if edge in visited_edges:
+                    continue
+
+                visited_edges.add(edge)
+                dfs(nxt, visited_nodes | {nxt}, length + weight)
+                visited_edges.remove(edge)
+
+        for start in graph:
+            dfs(start, {start}, 0)
+
+        return best

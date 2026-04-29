@@ -8,5 +8,7 @@ class Player:
         self.color = None
         self.stations = 3
 
+        self.completed_tickets = 0
+
     def __str__(self):
         return f"{self.name} | Score: {self.score} | Trains: {self.trains}"
