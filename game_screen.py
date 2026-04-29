@@ -18,12 +18,19 @@ class GameScreen:
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill="both", expand=True)
 
-        self.board_frame = tk.Frame(self.frame)
+        self.main_area = tk.Frame(self.frame)
+        self.main_area.pack(fill="both", expand=True)
+
+        self.board_frame = tk.Frame(self.main_area)
         self.board_frame.pack(side="left", fill="both", expand=True)
 
-        self.side_frame = tk.Frame(self.frame, width=260, padx=10, pady=10)
+        self.side_frame = tk.Frame(self.main_area, width=260, padx=10, pady=10)
         self.side_frame.pack(side="right", fill="y")
         self.side_frame.pack_propagate(False)
+
+        self.bottom_bar = tk.Frame(self.frame, height=140, bg="#222")
+        self.bottom_bar.pack(side="bottom", fill="x")
+        self.bottom_bar.pack_propagate(False)
 
         self.map_view = MapView(
             self.board_frame,
@@ -32,20 +39,12 @@ class GameScreen:
         )
 
         self.build_sidebar()
+        self.build_bottom_bar()
         self.update_sidebar()
         self.refresh_card_ui()
         self.handle_initial_tickets()
 
     def build_sidebar(self):
-        tk.Label(
-            self.side_frame,
-            text="Game Screen",
-            font=("Arial", 18, "bold")
-        ).pack(pady=(0, 10))
-
-        self.current_label = tk.Label(self.side_frame, text="")
-        self.current_label.pack(pady=5)
-
         tk.Label(self.side_frame, text="Players:").pack(anchor="w", pady=(15, 5))
 
         self.player_list = tk.Listbox(self.side_frame, height=10)
@@ -61,9 +60,10 @@ class GameScreen:
         self.info_label = tk.Label(self.side_frame, text="", wraplength=220, justify="left")
         self.info_label.pack(pady=6)
 
-        tk.Label(self.side_frame, text="Train cards:").pack(anchor="w", pady=(12, 4))
-        self.hand_list = tk.Listbox(self.side_frame, height=8)
-        self.hand_list.pack(fill="x")
+        tk.Label(self.side_frame, text="Draw Train Cards").pack(anchor="w", pady=(12, 4))
+
+        self.offer_frame = tk.Frame(self.side_frame)
+        self.offer_frame.pack(fill="x")
 
         self.draw_status_label = tk.Label(self.side_frame, text="")
         self.draw_status_label.pack(pady=(10, 6))
@@ -89,6 +89,13 @@ class GameScreen:
         )
         self.draw_ticket_button.pack(fill="x", pady=2)
 
+        self.finish_draw_button = tk.Button(
+            self.side_frame,
+            text="Finish Drawing",
+            command=lambda: self.finish_draw_action("Finished drawing early.")
+        )
+        self.finish_draw_button.pack(fill="x", pady=2)
+
         tk.Label(self.side_frame, text="Face-up offer:").pack(anchor="w", pady=(12, 4))
         self.offer_frame = tk.Frame(self.side_frame)
         self.offer_frame.pack(fill="x")
@@ -98,25 +105,16 @@ class GameScreen:
         self.ticket_list.pack(fill="x")
 
     def update_sidebar(self, message=""):
-        current = self.game.current_player()
-        self.current_label.config(
-            text=f"Current player: {current.name if current else 'None'}"
-        )
-
         self.player_list.delete(0, "end")
         for p in self.game.get_players():
             self.player_list.insert("end", str(p))
 
         self.info_label.config(text=message)
         self.refresh_card_ui()
+        self.update_bottom_bar()
 
     def refresh_card_ui(self):
         current = self.game.current_player()
-
-        self.hand_list.delete(0, "end")
-        if current:
-            for card in current.train_cards:
-                self.hand_list.insert("end", str(card))
 
         if self.draw_mode:
             self.draw_status_label.config(
@@ -127,29 +125,33 @@ class GameScreen:
 
         self.draw_deck_button.config(state="normal" if self.draw_mode else "disabled")
         self.start_draw_button.config(state="disabled" if self.draw_mode else "normal")
+        self.finish_draw_button.config(
+            state="normal" if self.draw_mode and self.draws_remaining == 1 else "disabled"
+        )
 
         for widget in self.offer_frame.winfo_children():
             widget.destroy()
 
         face_up = self.game.train_deck.get_face_up()
+
         for i, card in enumerate(face_up):
             text = "Empty" if card is None else str(card)
-            state = "disabled"
 
-            if self.draw_mode and card is not None:
-                if card.is_locomotive() and self.draws_remaining < 2:
-                    state = "disabled"
-                else:
-                    state = "normal"
+            can_click = (
+                    self.draw_mode
+                    and card is not None
+                    and not (card.is_locomotive() and self.draws_remaining < 2)
+            )
 
             btn = tk.Button(
                 self.offer_frame,
                 text=text,
-                width=18,
+                width=20,
+                height=2,
                 command=lambda idx=i: self.draw_from_offer(idx),
-                state=state
+                state="normal" if can_click else "disabled"
             )
-            btn.pack(fill="x", pady=1)
+            btn.pack(fill="x", pady=2)
 
         self.ticket_list.delete(0, "end")
         if current:
@@ -162,7 +164,7 @@ class GameScreen:
 
         self.draw_mode = True
         self.draws_remaining = 2
-        self.update_sidebar("Choose up to 2 train cards.")
+        self.update_sidebar("Draw up to 2 train cards (you may stop after 1).")
 
     def draw_from_deck(self):
         if not self.draw_mode:
@@ -343,3 +345,61 @@ class GameScreen:
             for t in drawn:
                 if t not in kept:
                     self.game.destination_deck.insert(0, t)
+
+    def build_bottom_bar(self):
+        self.bottom_inner = tk.Frame(self.bottom_bar, bg="#222", padx=10, pady=10)
+        self.bottom_inner.pack(fill="both", expand=True)
+
+        # Player info
+        self.bottom_player_label = tk.Label(
+            self.bottom_inner, text="", fg="white", bg="#222",
+            font=("Arial", 12, "bold")
+        )
+        self.bottom_player_label.pack(anchor="w")
+
+        self.bottom_stats_label = tk.Label(
+            self.bottom_inner, text="", fg="white", bg="#222"
+        )
+        self.bottom_stats_label.pack(anchor="w", pady=(0, 8))
+
+        # Cards + tickets split
+        self.bottom_content = tk.Frame(self.bottom_inner, bg="#222")
+        self.bottom_content.pack(fill="both", expand=True)
+
+        # Cards
+        self.card_frame = tk.Frame(self.bottom_content, bg="#222")
+        self.card_frame.pack(side="left", fill="both", expand=True)
+
+        tk.Label(self.card_frame, text="Train Cards", fg="white", bg="#222").pack(anchor="w")
+
+        self.card_list = tk.Listbox(self.card_frame, height=5)
+        self.card_list.pack(fill="both", expand=True)
+
+        # Tickets
+        self.ticket_frame = tk.Frame(self.bottom_content, bg="#222")
+        self.ticket_frame.pack(side="left", fill="both", expand=True)
+
+        tk.Label(self.ticket_frame, text="Tickets", fg="white", bg="#222").pack(anchor="w")
+
+        self.ticket_list_bottom = tk.Listbox(self.ticket_frame, height=5)
+        self.ticket_list_bottom.pack(fill="both", expand=True)
+
+    def update_bottom_bar(self):
+        player = self.game.current_player()
+        if not player:
+            return
+
+        self.bottom_player_label.config(text=f"{player.name}'s Turn")
+        self.bottom_stats_label.config(
+            text=f"Score: {player.score} | Trains: {player.trains}"
+        )
+
+        # cards
+        self.card_list.delete(0, "end")
+        for c in player.train_cards:
+            self.card_list.insert("end", str(c))
+
+        # tickets
+        self.ticket_list_bottom.delete(0, "end")
+        for t in player.destination_tickets:
+            self.ticket_list_bottom.insert("end", str(t))
