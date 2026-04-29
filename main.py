@@ -4,7 +4,7 @@ from game import Game
 from setup_screen import SetupScreen
 
 
-def main():
+def main() -> None:
     root = tk.Tk()
     root.title("Ticket to Ride Prototype")
     root.geometry("1100x750")
