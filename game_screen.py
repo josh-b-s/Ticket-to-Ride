@@ -34,6 +34,7 @@ class GameScreen:
         self.build_sidebar()
         self.update_sidebar()
         self.refresh_card_ui()
+        self.handle_initial_tickets()
 
     def build_sidebar(self):
         tk.Label(
@@ -300,3 +301,45 @@ class GameScreen:
             self.update_sidebar(msg)
 
         tk.Button(win, text="Confirm", command=confirm).pack(pady=10)
+
+    def choose_destination_tickets(self, player, tickets, min_keep=2):
+        win = tk.Toplevel(self.root)
+        win.title(f"{player.name} - Choose Destination Tickets")
+
+        tk.Label(win, text="Select tickets to KEEP (min 2):").pack(pady=10)
+
+        vars_ = []
+        for t in tickets:
+            var = tk.BooleanVar(value=True)
+            chk = tk.Checkbutton(win, text=str(t), variable=var, anchor="w", justify="left")
+            chk.pack(fill="x", padx=10, pady=2)
+            vars_.append(var)
+
+        result = []
+
+        def confirm():
+            selected = [t for t, v in zip(tickets, vars_) if v.get()]
+            if len(selected) < min_keep:
+                messagebox.showerror("Error", f"You must keep at least {min_keep} tickets.")
+                return
+            result.extend(selected)
+            win.destroy()
+
+        tk.Button(win, text="Confirm", command=confirm).pack(pady=10)
+
+        win.grab_set()
+        win.wait_window()
+
+        return result
+
+    def handle_initial_tickets(self):
+        for player in self.game.get_players():
+            drawn = self.game.draw_destination_tickets(3)
+            kept = self.choose_destination_tickets(player, drawn, min_keep=2)
+
+            player.destination_tickets.extend(kept)
+
+            # return unkept cards to bottom of deck
+            for t in drawn:
+                if t not in kept:
+                    self.game.destination_deck.insert(0, t)

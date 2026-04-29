@@ -54,7 +54,6 @@ class Game:
             p.destination_tickets.clear()
 
         self.build_destination_deck()
-        self.deal_initial_tickets()
         self.deal_initial_train_cards()
 
     def deal_initial_train_cards(self):
@@ -199,3 +198,10 @@ class Game:
 
         self.next_player()
         return True, "Tickets chosen."
+
+    def draw_destination_tickets(self, count=3):
+        drawn = []
+        for _ in range(count):
+            if self.destination_deck:
+                drawn.append(self.destination_deck.pop())
+        return drawn
