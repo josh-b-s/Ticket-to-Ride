@@ -23,7 +23,17 @@ class SetupScreen:
         tk.Label(self.frame, text="Ticket to Ride", font=("Arial", 18, "bold")).pack(
             pady=(0, 10)
         )
-        tk.Label(self.frame, text="Enter 2 to 5 player names").pack(pady=(0, 15))
+        tk.Label(
+            self.frame,
+            text="Sprint 2 Prototype - London Map",
+            font=("Arial", 11),
+        ).pack(pady=(0, 3))
+        tk.Label(self.frame, text="Enter 2 to 5 unique player names").pack(pady=(0, 12))
+        tk.Label(
+            self.frame,
+            text="Each player uses the colour shown above their input box.",
+            fg="#333",
+        ).pack(pady=(0, 15))
 
         row = tk.Frame(self.frame)
         row.pack(pady=10)
@@ -34,10 +44,22 @@ class SetupScreen:
             col.pack(side="left")
             tk.Label(col, text=label, font=("Arial", 10, "bold"), fg=color_name).pack()
             entry = tk.Entry(col, width=12, justify="center")
+            entry.insert(0, "")
             entry.pack(pady=5)
             self.entries.append((color_name, entry))
 
-        tk.Button(self.frame, text="Start Game", command=self._start_game).pack(pady=20)
+        button_row = tk.Frame(self.frame)
+        button_row.pack(pady=20)
+        tk.Button(button_row, text="Start Game", command=self._start_game, width=14).pack(
+            side="left", padx=6
+        )
+        tk.Button(button_row, text="Clear", command=self._clear_inputs, width=14).pack(
+            side="left", padx=6
+        )
+
+    def _clear_inputs(self) -> None:
+        for _, entry in self.entries:
+            entry.delete(0, "end")
 
     def _start_game(self) -> None:
         self.game.players.clear()

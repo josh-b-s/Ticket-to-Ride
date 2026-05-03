@@ -17,3 +17,8 @@ class Player:
 
     def __repr__(self) -> str:
         return f"Player({self.name!r})"
+
+    def card_color_summary(self) -> list[str]:
+        """Return distinct non-locomotive colors in hand (sorted)."""
+        colors = {card.color for card in self.train_cards if card.color != "locomotive"}
+        return sorted(colors)

@@ -1,8 +1,8 @@
 """Main game screen: layout + turn management."""
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox
 
-from dialogs import ask_ticket_choice
+from dialogs import ask_gray_route_color, ask_ticket_choice
 from map_view import MapView
 from train_card import TrainCard
 
@@ -39,7 +39,7 @@ class GameScreen:
         self.side_frame.pack(side="right", fill="y")
         self.side_frame.pack_propagate(False)
 
-        self.bottom_bar = tk.Frame(self.frame, height=140, bg="#222")
+        self.bottom_bar = tk.Frame(self.frame, height=190, bg="#222")
         self.bottom_bar.pack(side="bottom", fill="x")
         self.bottom_bar.pack_propagate(False)
 
@@ -48,16 +48,24 @@ class GameScreen:
         self._build_bottom_bar()
 
     def _build_sidebar(self) -> None:
-        tk.Label(self.side_frame, text="Players:").pack(anchor="w", pady=(10, 5))
+        tk.Label(
+            self.side_frame, text="Players", font=("Arial", 11, "bold")
+        ).pack(anchor="w", pady=(10, 5))
 
         self.player_list = tk.Listbox(self.side_frame, height=8)
         self.player_list.pack(fill="x")
 
+        tk.Label(
+            self.side_frame, text="Turn Information", font=("Arial", 11, "bold")
+        ).pack(anchor="w", pady=(12, 4))
         self.info_label = tk.Label(
-            self.side_frame, text="", wraplength=220, justify="left"
+            self.side_frame, text="", wraplength=220, justify="left", anchor="w"
         )
-        self.info_label.pack(pady=8)
+        self.info_label.pack(fill="x", pady=(0, 8))
 
+        tk.Label(
+            self.side_frame, text="Actions", font=("Arial", 11, "bold")
+        ).pack(anchor="w", pady=(4, 2))
         self.action_frame = tk.Frame(self.side_frame)
         self.action_frame.pack(fill="x", pady=10)
 
@@ -76,10 +84,10 @@ class GameScreen:
         content = tk.Frame(inner, bg="#222")
         content.pack(fill="both", expand=True)
 
-        self.card_list = tk.Listbox(content, height=5)
+        self.card_list = tk.Listbox(content, height=8)
         self.card_list.pack(side="left", fill="both", expand=True)
 
-        self.ticket_list_bottom = tk.Listbox(content, height=5)
+        self.ticket_list_bottom = tk.Listbox(content, height=8)
         self.ticket_list_bottom.pack(side="left", fill="both", expand=True)
 
     # ================================================================ sidebar updates
@@ -87,7 +95,8 @@ class GameScreen:
     def update_sidebar(self, message: str = "") -> None:
         self.player_list.delete(0, "end")
         for p in self.game.get_players():
-            self.player_list.insert("end", str(p))
+            color_label = p.color.title() if p.color else "Unassigned"
+            self.player_list.insert("end", f"[{color_label}] {p}")
 
         self.info_label.config(text=message)
         self._render_actions()
@@ -103,6 +112,18 @@ class GameScreen:
             self._render_draw_actions()
 
     def _render_main_actions(self) -> None:
+        if self.game.game_over:
+            tk.Label(self.action_frame, text="Game finished. No actions available.").pack(
+                pady=4
+            )
+            return
+
+        tk.Label(
+            self.action_frame,
+            text="Choose one action for this turn:",
+            justify="left",
+        ).pack(anchor="w", pady=(0, 4))
+
         tk.Button(
             self.action_frame,
             text="Draw Train Cards",
@@ -152,22 +173,45 @@ class GameScreen:
 
         self.bottom_player_label.config(text=f"{player.name}'s Turn")
         self.bottom_stats_label.config(
-            text=f"Score: {player.score}  |  Trains: {player.trains}"
+            text=(
+                f"Score: {player.score}  |  Trains: {player.trains}  |  "
+                f"Train cards: {len(player.train_cards)}  |  Tickets: {len(player.destination_tickets)}"
+            )
         )
 
         self.card_list.delete(0, "end")
-        for c in player.train_cards:
-            self.card_list.insert("end", str(c))
+        self.card_list.insert("end", "Train Cards Summary")
+        self.card_list.insert("end", "-" * 24)
+        summary = self._build_card_summary(player.train_cards)
+        if not summary:
+            self.card_list.insert("end", "No cards")
+        for color, count in summary:
+            self.card_list.insert("end", f"{color.title():<12} x{count}")
 
         self.ticket_list_bottom.delete(0, "end")
+        self.ticket_list_bottom.insert("end", "Destination Tickets")
+        self.ticket_list_bottom.insert("end", "-" * 24)
+        if not player.destination_tickets:
+            self.ticket_list_bottom.insert("end", "No tickets")
         for t in player.destination_tickets:
             self.ticket_list_bottom.insert("end", str(t))
+
+    @staticmethod
+    def _build_card_summary(cards: list) -> list[tuple[str, int]]:
+        order = TrainCard.COLORS + ["locomotive"]
+        counts = {color: 0 for color in order}
+        for card in cards:
+            if card.color in counts:
+                counts[card.color] += 1
+        return [(color, counts[color]) for color in order if counts[color] > 0]
 
     # ================================================================ actions
 
     # ---- draw train cards ----
 
     def _start_draw_action(self) -> None:
+        if self.game.game_over:
+            return
         self._action_mode = "draw"
         self._draws_remaining = 2
         self._cards_drawn_this_turn = 0
@@ -229,6 +273,8 @@ class GameScreen:
     # ---- destination tickets ----
 
     def _start_ticket_draw(self) -> None:
+        if self.game.game_over:
+            return
         if self._action_mode != "main":
             return
         tickets = self.game.draw_destination_tickets()
@@ -262,22 +308,22 @@ class GameScreen:
     # ---- route claiming ----
 
     def _on_route_click(self, route) -> None:
+        if self.game.game_over:
+            return
         if self._action_mode != "main":
             messagebox.showinfo("Turn", "Finish your current action first.")
             return
 
         chosen_color = None
         if route.color is None:
-            chosen_color = simpledialog.askstring(
-                "Gray Route",
-                "Choose a colour: " + ", ".join(TrainCard.COLORS),
-                parent=self.root,
+            player = self.game.current_player()
+            playable_colors = self.game.available_colors_for_gray_route(player, route.length)
+            chosen_color = ask_gray_route_color(
+                self.root,
+                player.name,
+                playable_colors,
             )
             if not chosen_color:
-                return
-            chosen_color = chosen_color.strip().lower()
-            if chosen_color not in TrainCard.COLORS:
-                messagebox.showinfo("Error", f"{chosen_color!r} is not a valid colour.")
                 return
 
         success, message = self.game.claim_route(route, chosen_color)
@@ -292,8 +338,10 @@ class GameScreen:
 
     def _on_game_end(self, route_lengths: dict) -> None:
         lines = ["Game Over!\n"]
-        sorted_players = sorted(
-            self.game.get_players(), key=lambda p: p.score, reverse=True
+        sorted_players = (
+            self.game.final_standings
+            if self.game.final_standings
+            else sorted(self.game.get_players(), key=lambda p: p.score, reverse=True)
         )
         for p in sorted_players:
             lines.append(
@@ -301,6 +349,17 @@ class GameScreen:
                 f"(tickets: {p.completed_tickets}, "
                 f"longest: {route_lengths.get(p, 0)})"
             )
-        winner = sorted_players[0]
-        lines.append(f"\nWinner: {winner.name}!")
+        if not sorted_players:
+            lines.append("\nNo winner.")
+        else:
+            top = sorted_players[0]
+            ties = [
+                p
+                for p in sorted_players
+                if self.game._standings_key(p) == self.game._standings_key(top)
+            ]
+            if len(ties) == 1:
+                lines.append(f"\nWinner: {top.name}!")
+            else:
+                lines.append("\nWinners (tie): " + ", ".join(p.name for p in ties))
         messagebox.showinfo("Game Over", "\n".join(lines))

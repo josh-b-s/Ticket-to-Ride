@@ -25,6 +25,7 @@ class Game:
         # Game-over state — checked by the UI after each action
         self.game_over: bool = False
         self.on_game_end: Callable | None = None  # optional UI callback
+        self.final_standings: list[Player] = []
 
     # ---------------------------------------------------------------- proxies
 
@@ -65,6 +66,7 @@ class Game:
         self.last_round_triggered = False
         self.last_player_index = None
         self.game_over = False
+        self.final_standings = []
 
         for p in self.players:
             p.score = 0
@@ -107,6 +109,18 @@ class Game:
         if card:
             player.train_cards.append(card)
         return card
+
+    def available_colors_for_gray_route(self, player: Player, route_length: int) -> list[str]:
+        """
+        For a gray route, return playable colors considering locomotives as wild cards.
+        """
+        locos = sum(1 for c in player.train_cards if c.is_locomotive())
+        playable: list[str] = []
+        for color in player.card_color_summary():
+            normal_count = sum(1 for c in player.train_cards if c.color == color)
+            if normal_count + locos >= route_length:
+                playable.append(color)
+        return playable
 
     def select_cards_for_route(
             self, player: Player, route: Route, chosen_color: str | None = None
@@ -156,8 +170,16 @@ class Game:
             self.last_round_triggered = True
             self.last_player_index = self.current_player_index
 
+        route_desc = f"{route.city_a} - {route.city_b}"
+        if route.color is None and chosen_color:
+            result_message = (
+                f"{player.name} claimed {route_desc} using {chosen_color.title()} cards."
+            )
+        else:
+            result_message = f"{player.name} claimed {route_desc}."
+
         self.next_player()
-        return True, "Route claimed."
+        return True, result_message
 
     # -------------------------------------------------------- destination tickets
 
@@ -233,32 +255,43 @@ class Game:
         return False
 
     def _longest_route_length(self, player: Player) -> int:
-        graph: dict[str, list[tuple[str, int]]] = {}
-        for route in self.routes:
-            if route.owner_player != player:
-                continue
-            a, b = route.city_a, route.city_b
-            graph.setdefault(a, []).append((b, route.length))
-            graph.setdefault(b, []).append((a, route.length))
+        # Use route indices so parallel routes are treated as distinct edges.
+        graph: dict[str, list[tuple[str, int, int]]] = {}
+        owned_routes: list[tuple[int, Route]] = [
+            (idx, route)
+            for idx, route in enumerate(self.routes)
+            if route.owner_player == player
+        ]
+
+        for route_id, route in owned_routes:
+            graph.setdefault(route.city_a, []).append((route.city_b, route.length, route_id))
+            graph.setdefault(route.city_b, []).append((route.city_a, route.length, route_id))
 
         best = 0
-        visited_edges: set = set()
+        used_route_ids: set[int] = set()
 
-        def dfs(city: str, length: int) -> None:
+        def dfs(city: str, total_length: int) -> None:
             nonlocal best
-            best = max(best, length)
-            for nxt, weight in graph.get(city, []):
-                edge = tuple(sorted((city, nxt)))
-                if edge in visited_edges:
+            best = max(best, total_length)
+            for nxt, weight, route_id in graph.get(city, []):
+                if route_id in used_route_ids:
                     continue
-                visited_edges.add(edge)
-                dfs(nxt, length + weight)
-                visited_edges.remove(edge)
+                used_route_ids.add(route_id)
+                dfs(nxt, total_length + weight)
+                used_route_ids.remove(route_id)
 
-        for start in graph:
-            dfs(start, 0)
+        for start_city in graph:
+            dfs(start_city, 0)
 
         return best
+
+    @staticmethod
+    def _standings_key(player: Player) -> tuple[int, int, int, str]:
+        """
+        Sort by score, then completed tickets, then trains left.
+        Name is used as a deterministic final fallback.
+        """
+        return player.score, player.completed_tickets, player.trains, player.name.lower()
 
     def _end_game(self) -> None:
         self.game_over = True
@@ -269,6 +302,12 @@ class Game:
         for p, length in route_lengths.items():
             if length == max_len:
                 p.score += 10
+
+        self.final_standings = sorted(
+            self.players,
+            key=self._standings_key,
+            reverse=True,
+        )
 
         if self.on_game_end:
             self.on_game_end(route_lengths)
