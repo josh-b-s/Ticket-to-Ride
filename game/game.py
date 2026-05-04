@@ -11,7 +11,7 @@ from train_deck import TrainDeck
 
 _ROUTE_POINTS: dict[int, int] = {1: 1, 2: 2, 3: 4, 4: 7, 5: 10, 6: 15}
 _LAST_ROUND_THRESHOLD = 2
-# test
+
 
 class Game:
     def __init__(self):
