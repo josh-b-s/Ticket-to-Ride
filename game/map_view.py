@@ -1,5 +1,6 @@
 import math
 import tkinter as tk
+from PIL import Image, ImageTk
 
 _END_GAP = 14  # gap at start/end of each route segment cluster
 _MID_GAP = 6  # gap between individual segments
@@ -12,6 +13,10 @@ class MapView:
         self.game = game
         self.on_route_click = on_route_click
 
+        self.bg_image_original = Image.open("london_map.png")
+        self.bg_image = None
+        self.bg_photo = None
+
         self.canvas = tk.Canvas(self.parent, bg="white")
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda e: self.draw() if e.width > 10 else None)
@@ -20,6 +25,9 @@ class MapView:
 
     def draw(self) -> None:
         self.canvas.delete("all")
+
+        self._draw_background()
+
         scale, ox, oy = self._get_transform()
         self._draw_routes(scale, ox, oy)
         self._draw_cities(scale, ox, oy)
@@ -144,3 +152,19 @@ class MapView:
             segments.append((sx, sy, ex, ey))
             t += seg_len + _MID_GAP
         return segments
+
+    def _draw_background(self):
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
+
+        if w <= 1 or h <= 1:
+            return
+
+        resized = self.bg_image_original.resize((w, h))
+        self.bg_photo = ImageTk.PhotoImage(resized)
+
+        self.canvas.create_image(
+            0, 0,
+            image=self.bg_photo,
+            anchor="nw"
+        )
