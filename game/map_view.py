@@ -1,10 +1,10 @@
 import math
 import tkinter as tk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageEnhance
 
-_END_GAP = 18  # gap at start/end of each route segment cluster
-_MID_GAP = 6  # gap between individual segments
-_ROUTE_OFFSET = 12  # lateral offset between parallel routes (scaled)
+_END_GAP = 18
+_MID_GAP = 6
+_ROUTE_OFFSET = 12
 
 
 class MapView:
@@ -14,25 +14,24 @@ class MapView:
         self.on_route_click = on_route_click
 
         self.bg_image_original = Image.open("london_map.png")
-        self.bg_image = None
         self.bg_photo = None
 
-        self.canvas = tk.Canvas(self.parent, bg="white")
-        self.canvas.pack(fill="both", expand=True)
-        self.canvas.bind("<Configure>", lambda e: self.draw() if e.width > 10 else None)
+        self.wood_bg_original = Image.open("wood.jpg")
+        self.wood_bg_photo = None
 
-    # ---------------------------------------------------------------- public
+        self.canvas = tk.Canvas(self.parent, bg="#E4C897", highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
+        self.canvas.bind("<Configure>", lambda e: self.draw() if e.width > 10 and e.height > 10 else None)
 
     def draw(self) -> None:
         self.canvas.delete("all")
 
+        self._draw_wood_background()
         self._draw_background()
 
         scale, ox, oy = self._get_transform()
         self._draw_routes(scale, ox, oy)
         self._draw_cities(scale, ox, oy)
-
-    # -------------------------------------------------------------- transform
 
     def _get_transform(self) -> tuple[float, float, float]:
         self.canvas.update_idletasks()
@@ -41,6 +40,7 @@ class MapView:
 
         min_x, min_y, map_w, map_h = self.game.get_bounds()
         padding = max(80, int(min(w, h) * 0.2))
+
         scale = min((w - padding) / map_w, (h - padding) / map_h)
         ox = (w - map_w * scale) / 2 - min_x * scale
         oy = (h - map_h * scale) / 2 - min_y * scale
@@ -48,8 +48,6 @@ class MapView:
 
     def _scale_point(self, x: float, y: float, scale: float, ox: float, oy: float):
         return x * scale + ox, y * scale + oy
-
-    # -------------------------------------------------------------- drawing
 
     def _draw_routes(self, scale: float, ox: float, oy: float) -> None:
         for idx, route in enumerate(self.game.routes):
@@ -59,9 +57,8 @@ class MapView:
                 continue
 
             group = self._route_group(route)
-            group_index = next(
-                (i for i, (gi, _) in enumerate(group) if gi == idx), 0
-            )
+            group_index = next((i for i, (gi, _) in enumerate(group) if gi == idx), 0)
+
             offset = (group_index - (len(group) - 1) / 2) * (_ROUTE_OFFSET * scale)
             x1o, y1o, x2o, y2o = self._offset_line(x1, y1, x2, y2, offset)
 
@@ -72,11 +69,10 @@ class MapView:
             color = self._route_color(route)
             tag = f"route_{idx}"
 
-            outline_width = max(14, int(14 * scale))
+            outline_width = max(12, int(14 * scale))
             route_width = max(8, int(10 * scale))
             hitbox_width = max(18, int(20 * scale))
 
-            # continuous white outline
             self.canvas.create_line(
                 x1o, y1o, x2o, y2o,
                 fill="white",
@@ -85,9 +81,7 @@ class MapView:
                 tags=(tag,)
             )
 
-            # segmented routes + hitboxes
             for sx, sy, ex, ey in segments:
-                # hitbox
                 self.canvas.create_line(
                     sx, sy, ex, ey,
                     fill="",
@@ -95,8 +89,6 @@ class MapView:
                     capstyle="round",
                     tags=(tag,)
                 )
-
-                # colored segment
                 self.canvas.create_line(
                     sx, sy, ex, ey,
                     fill=color,
@@ -105,42 +97,35 @@ class MapView:
                     tags=(tag,)
                 )
 
-            self.canvas.tag_bind(
-                tag, "<Button-1>", lambda e, r=route: self.on_route_click(r)
-            )
+            self.canvas.tag_bind(tag, "<Button-1>", lambda e, r=route: self.on_route_click(r))
 
     def _draw_cities(self, scale: float, ox: float, oy: float) -> None:
         for city, (cx, cy) in self.game.cities.items():
             x, y = self._scale_point(cx, cy, scale, ox, oy)
             r = max(4, int(9 * scale))
-            # outer white circle
+
             self.canvas.create_oval(
                 x - r - 2, y - r - 2,
                 x + r + 2, y + r + 2,
                 fill="white",
                 outline=""
             )
-
-            # inner black city
             self.canvas.create_oval(
                 x - r, y - r,
                 x + r, y + r,
                 fill="black",
                 outline=""
             )
+
             self._draw_outlined_text(
                 x, y - 14 * scale, city,
-                font=("Arial", max(6, int(6 * scale)), "bold"),
+                font=("Georgia", max(6, int(6 * scale)), "bold")
             )
 
-    def _draw_outlined_text(
-            self, x: float, y: float, text: str, font, fill: str = "black", outline: str = "white"
-    ) -> None:
+    def _draw_outlined_text(self, x: float, y: float, text: str, font, fill: str = "black", outline: str = "white") -> None:
         for dx, dy in [(-1, -1), (1, -1), (-1, 1), (1, 1), (-2, 0), (2, 0), (0, -2), (0, 2)]:
             self.canvas.create_text(x + dx, y + dy, text=text, font=font, fill=outline)
         self.canvas.create_text(x, y, text=text, font=font, fill=fill)
-
-    # -------------------------------------------------------------- helpers
 
     def _route_group(self, route) -> list:
         key = tuple(sorted([route.city_a, route.city_b]))
@@ -192,11 +177,38 @@ class MapView:
         if w <= 1 or h <= 1:
             return
 
-        resized = self.bg_image_original.resize((w, h))
+        img = self.bg_image_original.copy()
+
+        # Optional subtle visual polish: slightly softer contrast for readability
+        img = ImageEnhance.Contrast(img).enhance(0.95)
+        img = ImageEnhance.Brightness(img).enhance(1.02)
+
+        iw, ih = img.size
+        scale = min(w / iw, h / ih)
+
+        new_w = max(1, int(iw * scale))
+        new_h = max(1, int(ih * scale))
+
+        resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         self.bg_photo = ImageTk.PhotoImage(resized)
+
+        x = (w - new_w) // 2
+        y = (h - new_h) // 2
+
+        self.canvas.create_image(x, y, image=self.bg_photo, anchor="nw")
+
+    def _draw_wood_background(self):
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
+
+        if w <= 1 or h <= 1:
+            return
+
+        img = self.wood_bg_original.resize((w, h), Image.Resampling.LANCZOS)
+        self.wood_bg_photo = ImageTk.PhotoImage(img)
 
         self.canvas.create_image(
             0, 0,
-            image=self.bg_photo,
+            image=self.wood_bg_photo,
             anchor="nw"
         )
