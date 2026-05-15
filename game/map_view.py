@@ -2,7 +2,7 @@ import math
 import tkinter as tk
 from PIL import Image, ImageTk
 
-_END_GAP = 14  # gap at start/end of each route segment cluster
+_END_GAP = 18  # gap at start/end of each route segment cluster
 _MID_GAP = 6  # gap between individual segments
 _ROUTE_OFFSET = 12  # lateral offset between parallel routes (scaled)
 
@@ -72,17 +72,37 @@ class MapView:
             color = self._route_color(route)
             tag = f"route_{idx}"
 
+            outline_width = max(14, int(14 * scale))
+            route_width = max(8, int(10 * scale))
+            hitbox_width = max(18, int(20 * scale))
+
+            # continuous white outline
+            self.canvas.create_line(
+                x1o, y1o, x2o, y2o,
+                fill="white",
+                width=outline_width,
+                capstyle="round",
+                tags=(tag,)
+            )
+
+            # segmented routes + hitboxes
             for sx, sy, ex, ey in segments:
+                # hitbox
                 self.canvas.create_line(
                     sx, sy, ex, ey,
-                    fill="", width=max(18, int(20 * scale)),
-                    capstyle="round", tags=(tag,)
+                    fill="",
+                    width=hitbox_width,
+                    capstyle="round",
+                    tags=(tag,)
                 )
-            for sx, sy, ex, ey in segments:
+
+                # colored segment
                 self.canvas.create_line(
                     sx, sy, ex, ey,
-                    fill=color, width=max(10, int(10 * scale)),
-                    capstyle="butt", tags=(tag,)
+                    fill=color,
+                    width=route_width,
+                    capstyle="butt",
+                    tags=(tag,)
                 )
 
             self.canvas.tag_bind(
@@ -93,8 +113,20 @@ class MapView:
         for city, (cx, cy) in self.game.cities.items():
             x, y = self._scale_point(cx, cy, scale, ox, oy)
             r = max(4, int(9 * scale))
+            # outer white circle
             self.canvas.create_oval(
-                x - r, y - r, x + r, y + r, fill="black", outline="white"
+                x - r - 2, y - r - 2,
+                x + r + 2, y + r + 2,
+                fill="white",
+                outline=""
+            )
+
+            # inner black city
+            self.canvas.create_oval(
+                x - r, y - r,
+                x + r, y + r,
+                fill="black",
+                outline=""
             )
             self._draw_outlined_text(
                 x, y - 14 * scale, city,
