@@ -5,6 +5,7 @@ from typing import Callable
 
 from board import Board
 from destination_ticket import DestinationTicket
+from move_validator import MoveValidator, ValidationResult
 from player import Player
 from route import Route
 from train_deck import TrainDeck
@@ -22,10 +23,10 @@ class Game:
         self.destination_deck: list[DestinationTicket] = []
         self.last_round_triggered: bool = False
         self.last_player_index: int | None = None
-        # Game-over state — checked by the UI after each action
         self.game_over: bool = False
-        self.on_game_end: Callable | None = None  # optional UI callback
+        self.on_game_end: Callable | None = None
         self.final_standings: list[Player] = []
+        self._validator = MoveValidator()
 
     # ---------------------------------------------------------------- proxies
 
@@ -43,7 +44,7 @@ class Game:
     def get_bounds(self):
         return self.board.get_bounds()
 
-    # -------------------------------------------------------------- setup / start
+    # -------------------------------------------------------------- setup
 
     def add_player(self, name: str) -> Player | None:
         name = name.strip()
@@ -92,8 +93,13 @@ class Game:
     def next_player(self) -> None:
         if not self.players:
             return
-        self.current_player_index = (self.current_player_index + 1) % len(self.players)
-        if self.last_round_triggered and self.current_player_index == self.last_player_index:
+        self.current_player_index = (
+            (self.current_player_index + 1) % len(self.players)
+        )
+        if (
+            self.last_round_triggered
+            and self.current_player_index == self.last_player_index
+        ):
             self._end_game()
 
     # ---------------------------------------------------------- train cards
@@ -104,28 +110,38 @@ class Game:
             player.train_cards.append(card)
         return card
 
-    def draw_train_card_from_face_up(self, player: Player, index: int) -> object | None:
+    def draw_train_card_from_face_up(
+        self, player: Player, index: int
+    ) -> object | None:
         card = self.train_deck.draw_face_up(index)
         if card:
             player.train_cards.append(card)
         return card
 
-    def available_colors_for_gray_route(self, player: Player, route_length: int) -> list[str]:
-        """
-        For a gray route, return playable colors considering locomotives as wild cards.
-        """
+    def available_colors_for_gray_route(
+        self, player: Player, route_length: int
+    ) -> list[str]:
+        """Return colors the player can spend on a gray route."""
         locos = sum(1 for c in player.train_cards if c.is_locomotive())
         playable: list[str] = []
         for color in player.card_color_summary():
-            normal_count = sum(1 for c in player.train_cards if c.color == color)
+            normal_count = sum(
+                1 for c in player.train_cards if c.color == color
+            )
             if normal_count + locos >= route_length:
                 playable.append(color)
         return playable
 
     def select_cards_for_route(
-            self, player: Player, route: Route, chosen_color: str | None = None
+        self,
+        player: Player,
+        route: Route,
+        chosen_color: str | None = None,
     ) -> list | None:
-        required_color = route.color if route.color is not None else chosen_color
+        """Select the cards to spend, preferring color cards over locomotives."""
+        required_color = (
+            route.color if route.color is not None else chosen_color
+        )
         if required_color is None:
             return None
 
@@ -141,23 +157,37 @@ class Game:
         for card in cards:
             player.train_cards.remove(card)
 
-    def claim_route(self, route: Route, chosen_color: str | None = None) -> tuple[bool, str]:
+    def claim_route(
+        self, route: Route, chosen_color: str | None = None
+    ) -> ValidationResult:
+        """
+        Attempt to claim *route* for the current player.
+
+        Validation is delegated entirely to MoveValidator so this method
+        only handles state mutation on a valid claim.
+        """
         player = self.current_player()
         if player is None:
-            return False, "No current player."
-        if route.is_claimed():
-            return False, "That route is already claimed."
+            return ValidationResult(ok=False, reason="No current player.")
 
-        same_routes = [r for r in self.routes if {r.city_a, r.city_b} == {route.city_a, route.city_b}]
-        if len(self.players) <= 3 and any(r.is_claimed() for r in same_routes):
-            return False, "Route blocked in 2–3 player game."
-
-        if player.trains < route.length:
-            return False, "Not enough trains."
+        result = self._validator.validate_claim(
+            player,
+            route,
+            chosen_color,
+            self.routes,
+            len(self.players),
+        )
+        if not result.ok:
+            return result
 
         cards = self.select_cards_for_route(player, route, chosen_color)
-        if not cards:
-            return False, "You do not have the required cards."
+        if cards is None:
+            # Should not happen if validator passed — guard against logic drift.
+            return ValidationResult(
+                ok=False,
+                reason="Card selection failed unexpectedly.",
+                hint="This is likely a bug — please report it.",
+            )
 
         self.remove_cards_from_hand(player, cards)
         self.train_deck.discard(cards)
@@ -166,20 +196,24 @@ class Game:
         player.trains -= route.length
         player.score += _ROUTE_POINTS.get(route.length, route.length)
 
-        if player.trains <= _LAST_ROUND_THRESHOLD and not self.last_round_triggered:
+        if (
+            player.trains <= _LAST_ROUND_THRESHOLD
+            and not self.last_round_triggered
+        ):
             self.last_round_triggered = True
             self.last_player_index = self.current_player_index
 
-        route_desc = f"{route.city_a} - {route.city_b}"
+        route_desc = f"{route.city_a} – {route.city_b}"
         if route.color is None and chosen_color:
-            result_message = (
-                f"{player.name} claimed {route_desc} using {chosen_color.title()} cards."
+            message = (
+                f"{player.name} claimed {route_desc} "
+                f"using {chosen_color.title()} cards."
             )
         else:
-            result_message = f"{player.name} claimed {route_desc}."
+            message = f"{player.name} claimed {route_desc}."
 
         self.next_player()
-        return True, result_message
+        return ValidationResult(ok=True, reason=message)
 
     # -------------------------------------------------------- destination tickets
 
@@ -208,7 +242,9 @@ class Game:
         ]
         random.shuffle(self.destination_deck)
 
-    def draw_destination_tickets(self, count: int = 3) -> list[DestinationTicket]:
+    def draw_destination_tickets(
+        self, count: int = 3
+    ) -> list[DestinationTicket]:
         drawn = []
         for _ in range(count):
             if self.destination_deck:
@@ -216,11 +252,11 @@ class Game:
         return drawn
 
     def keep_destination_tickets(
-            self,
-            player: Player,
-            chosen: list[DestinationTicket],
-            drawn: list[DestinationTicket],
-            advance_turn: bool = True,
+        self,
+        player: Player,
+        chosen: list[DestinationTicket],
+        drawn: list[DestinationTicket],
+        advance_turn: bool = True,
     ) -> tuple[bool, str]:
         """Assign chosen tickets to player; return unchosen to bottom of deck."""
         if not chosen:
@@ -251,7 +287,9 @@ class Game:
     def _is_connected(self, player: Player, start: str, end: str) -> bool:
         return self._dfs(player, start, end, set())
 
-    def _dfs(self, player: Player, current: str, target: str, visited: set) -> bool:
+    def _dfs(
+        self, player: Player, current: str, target: str, visited: set
+    ) -> bool:
         if current == target:
             return True
         visited.add(current)
@@ -269,7 +307,6 @@ class Game:
         return False
 
     def _longest_route_length(self, player: Player) -> int:
-        # Use route indices so parallel routes are treated as distinct edges.
         graph: dict[str, list[tuple[str, int, int]]] = {}
         owned_routes: list[tuple[int, Route]] = [
             (idx, route)
@@ -278,8 +315,12 @@ class Game:
         ]
 
         for route_id, route in owned_routes:
-            graph.setdefault(route.city_a, []).append((route.city_b, route.length, route_id))
-            graph.setdefault(route.city_b, []).append((route.city_a, route.length, route_id))
+            graph.setdefault(route.city_a, []).append(
+                (route.city_b, route.length, route_id)
+            )
+            graph.setdefault(route.city_b, []).append(
+                (route.city_a, route.length, route_id)
+            )
 
         best = 0
         used_route_ids: set[int] = set()
@@ -301,17 +342,20 @@ class Game:
 
     @staticmethod
     def _standings_key(player: Player) -> tuple[int, int, int, str]:
-        """
-        Sort by score, then completed tickets, then trains left.
-        Name is used as a deterministic final fallback.
-        """
-        return player.score, player.completed_tickets, player.trains, player.name.lower()
+        return (
+            player.score,
+            player.completed_tickets,
+            player.trains,
+            player.name.lower(),
+        )
 
     def _end_game(self) -> None:
         self.game_over = True
         self._calculate_destination_scores()
 
-        route_lengths = {p: self._longest_route_length(p) for p in self.players}
+        route_lengths = {
+            p: self._longest_route_length(p) for p in self.players
+        }
         max_len = max(route_lengths.values(), default=0)
         for p, length in route_lengths.items():
             if length == max_len:
