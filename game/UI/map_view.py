@@ -1,7 +1,7 @@
 import math
 import tkinter as tk
 from pathlib import Path
-from PIL import Image, ImageTk, ImageEnhance
+from PIL import Image, ImageTk, ImageEnhance, ImageFilter
 
 _ASSETS = Path(__file__).parent.parent
 _END_GAP = 18
@@ -55,9 +55,6 @@ class MapView:
         self.bg_image_original = Image.open(_ASSETS / "map.png")
         self.bg_photo = None
 
-        self.wood_bg_original = Image.open(_ASSETS / "wood.jpg")
-        self.wood_bg_photo = None
-
         self.canvas = tk.Canvas(
             self.parent, bg="#E4C897", highlightthickness=0
         )
@@ -71,7 +68,7 @@ class MapView:
 
     def draw(self) -> None:
         self.canvas.delete("all")
-        self._draw_wood_background()
+        self._draw_gradient_background()
         self._draw_background()
         scale, ox, oy = self._get_transform()
         self._draw_routes(scale, ox, oy)
@@ -396,16 +393,23 @@ class MapView:
         y_pos = (h - new_h) // 2
         self.canvas.create_image(x_pos, y_pos, image=self.bg_photo, anchor="nw")
 
-    def _draw_wood_background(self) -> None:
+    def _draw_gradient_background(self) -> None:
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
+
         if w <= 1 or h <= 1:
             return
 
-        img = self.wood_bg_original.resize(
-            (w, h), Image.Resampling.LANCZOS
-        )
-        self.wood_bg_photo = ImageTk.PhotoImage(img)
-        self.canvas.create_image(
-            0, 0, image=self.wood_bg_photo, anchor="nw"
-        )
+        top = (50, 56, 66)  # #323842
+        bottom = (31, 35, 41)  # #1f2329
+
+        for y in range(h):
+            t = y / h
+
+            r = int(top[0] + (bottom[0] - top[0]) * t)
+            g = int(top[1] + (bottom[1] - top[1]) * t)
+            b = int(top[2] + (bottom[2] - top[2]) * t)
+
+            color = f"#{r:02x}{g:02x}{b:02x}"
+
+            self.canvas.create_line(0, y, w, y, fill=color)
