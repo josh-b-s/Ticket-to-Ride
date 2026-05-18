@@ -10,8 +10,8 @@ from game.UI.map_view import MapView
 from game.UI.theme import (
     ACCENT_GOLD, ACCENT_RED, BG_DARK, BG_MAIN, BG_PANEL, BG_SURFACE,
     BTN_HOVER, BTN_OFF, FG_HINT, FG_MUTED, FG_PRIMARY, FONT_BODY,
-    FONT_BUTTON, FONT_HINT, FONT_PLAYER, FONT_SMALL, FONT_STATS,
-    FONT_TITLE, GOLD_DIM, _PLAYER_COLORS,
+    FONT_BUTTON, FONT_HINT, FONT_LABEL, FONT_PLAYER, FONT_SMALL,
+    FONT_STATS, FONT_TITLE, GOLD_DIM, _PLAYER_COLORS,
 )
 from game.classes.train_card import TrainCard
 
@@ -141,7 +141,7 @@ class GameScreen:
     def _section_header(self, title: str) -> None:
         tk.Label(
             self.side_frame, text=title.upper(),
-            font=("Georgia", 9, "bold"), bg=BG_PANEL, fg=ACCENT_GOLD, anchor="w",
+            font=FONT_LABEL, bg=BG_PANEL, fg=ACCENT_GOLD, anchor="w",
         ).pack(anchor="w", pady=(12, 4))
 
     def _divider(self) -> None:
@@ -149,17 +149,18 @@ class GameScreen:
 
     def _styled_button(self, parent, primary: bool = True, **kwargs) -> tk.Button:
         bg_normal = ACCENT_RED if primary else BTN_OFF
-        bg_hover  = BTN_HOVER  if primary else "#3d2814"
-        fg_normal = FG_PRIMARY if primary else FG_MUTED
+        bg_hover  = BTN_HOVER  if primary else "#c8c8c8"
+        fg_normal = "#ffffff"  if primary else FG_MUTED
+        fg_active = "#ffffff"  if primary else FG_PRIMARY
 
         btn = tk.Button(
             parent, bg=bg_normal, fg=fg_normal, font=FONT_BUTTON,
             relief="flat", bd=0, activebackground=bg_hover,
-            activeforeground=FG_PRIMARY, cursor="hand2",
-            highlightthickness=0, disabledforeground=FG_MUTED, **kwargs,
+            activeforeground=fg_active, cursor="hand2",
+            highlightthickness=0, disabledforeground="#aaaaaa", **kwargs,
         )
-        btn.bind("<Enter>", lambda e: btn.config(bg=bg_hover)   if btn["state"] == "normal" else None)
-        btn.bind("<Leave>", lambda e: btn.config(bg=bg_normal)  if btn["state"] == "normal" else None)
+        btn.bind("<Enter>", lambda e: btn.config(bg=bg_hover)  if btn["state"] == "normal" else None)
+        btn.bind("<Leave>", lambda e: btn.config(bg=bg_normal) if btn["state"] == "normal" else None)
         return btn
 
     def _set_hint(self, text: str) -> None:
@@ -206,7 +207,7 @@ class GameScreen:
 
         tk.Label(
             self.action_frame, text="Choose an action for this turn:",
-            bg=BG_PANEL, fg=FG_MUTED, font=("Georgia", 9),
+            bg=BG_PANEL, fg=FG_MUTED, font=FONT_BODY,
         ).pack(anchor="w", pady=(0, 6))
 
         self._styled_button(
@@ -238,7 +239,7 @@ class GameScreen:
 
         tk.Label(
             self.action_frame, text="Face-up cards:",
-            bg=BG_PANEL, fg=FG_MUTED, font=("Georgia", 9),
+            bg=BG_PANEL, fg=FG_MUTED, font=FONT_BODY,
         ).pack(anchor="w", pady=(10, 4))
 
         face_up = self.game.get_face_up_cards()

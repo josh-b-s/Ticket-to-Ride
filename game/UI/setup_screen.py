@@ -4,8 +4,8 @@ from tkinter import messagebox
 from game.UI.game_screen import GameScreen
 from game.UI.theme import (
     ACCENT_GOLD, ACCENT_RED, BG_ENTRY, BG_MAIN as BG, BG_PANEL,
-    FG_MUTED, FG_PRIMARY, FONT_BTN, FONT_CITY, FONT_ENTRY,
-    FONT_HERO, FONT_HINT, FONT_LABEL, GOLD_DIM, PLAYER_SLOTS,
+    BTN_HOVER, BTN_OFF, FG_MUTED, FG_PRIMARY, FONT_BTN, FONT_CITY,
+    FONT_ENTRY, FONT_HERO, FONT_HINT, FONT_LABEL, GOLD_DIM, PLAYER_SLOTS,
 )
 
 
@@ -61,7 +61,7 @@ class SetupScreen:
                 highlightthickness=1, highlightcolor=ACCENT_GOLD, highlightbackground=GOLD_DIM,
             )
             entry.pack(side="left", ipady=3)
-            entry.bind("<FocusIn>",  lambda e, r=row: r.config(bg="#2e1c0e"))
+            entry.bind("<FocusIn>",  lambda e, r=row: r.config(bg="#363B45"))
             entry.bind("<FocusOut>", lambda e, r=row: r.config(bg=BG_PANEL))
 
             self.entries.append((color_name, entry))
@@ -74,19 +74,19 @@ class SetupScreen:
 
         start = tk.Button(
             btn_row, text="START GAME", font=FONT_BTN,
-            bg=ACCENT_RED, fg=FG_PRIMARY,
-            activebackground="#b52828", activeforeground=FG_PRIMARY,
+            bg=ACCENT_RED, fg="#ffffff",
+            activebackground=BTN_HOVER, activeforeground="#ffffff",
             relief="flat", padx=30, pady=10, cursor="hand2", bd=0,
             highlightthickness=0, command=self._start_game,
         )
         start.pack(side="left", padx=(0, 10))
-        start.bind("<Enter>", lambda e: start.config(bg="#b52828"))
+        start.bind("<Enter>", lambda e: start.config(bg=BTN_HOVER))
         start.bind("<Leave>", lambda e: start.config(bg=ACCENT_RED))
 
         clear = tk.Button(
             btn_row, text="CLEAR", font=FONT_BTN,
-            bg=BG_PANEL, fg=FG_MUTED,
-            activebackground="#2e1c0e", activeforeground=FG_PRIMARY,
+            bg=BTN_OFF, fg=FG_MUTED,
+            activebackground=GOLD_DIM, activeforeground=FG_PRIMARY,
             relief="flat", padx=18, pady=10, cursor="hand2", bd=0,
             highlightthickness=0, command=self._clear_inputs,
         )

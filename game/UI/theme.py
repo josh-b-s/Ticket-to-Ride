@@ -1,54 +1,59 @@
-"""theme.py — shared palette and font constants for all UI screens."""
+"""theme.py — shared UI palette and font constants.
+
+Based on the One Dark palette (#282C34 base) — dark but easy on the eyes.
+"""
 
 # ── Backgrounds ──────────────────────────────────────────────────────────────
-BG_MAIN    = "#160d08"   # espresso — window fill / main background
-BG_DARK    = "#0f0804"   # deep dark — bottom bar, board frame
-BG_PANEL   = "#221409"   # sidebar panel
-BG_SURFACE = "#1a0f06"   # listbox / card surfaces
-BG_ENTRY   = "#0f0804"   # entry field background
+BG_MAIN    = "#282C34"   # One Dark base — main window fill
+BG_DARK    = "#21252B"   # slightly deeper — bottom bar, board frame
+BG_PANEL   = "#2C313A"   # sidebar / panel surfaces
+BG_SURFACE = "#333842"   # listbox / card inset surfaces
+BG_ENTRY   = "#1E2227"   # entry field background
 
 # ── Accent colours ───────────────────────────────────────────────────────────
-ACCENT_RED  = "#9e2020"   # TTR signal red
-ACCENT_GOLD = "#c49a3c"   # railway gold
-GOLD_DIM    = "#5a3e10"   # dimmed gold for dividers / borders
+ACCENT_RED  = "#E06C75"   # One Dark red — primary action
+ACCENT_GOLD = "#E5C07B"   # One Dark yellow — headers / highlights
+GOLD_DIM    = "#4B5263"   # muted border / divider color
 
 # ── Foreground ───────────────────────────────────────────────────────────────
-FG_PRIMARY = "#f0e6d0"   # warm cream
-FG_MUTED   = "#7a5c3a"   # secondary / label text
-FG_HINT    = "#a07850"   # inline hint / detail text
+FG_PRIMARY = "#ABB2BF"   # One Dark foreground — main text
+FG_MUTED   = "#7A8394"   # secondary / label text
+FG_HINT    = "#5C6370"   # hint / detail text
 
 # ── Button states ────────────────────────────────────────────────────────────
-BTN_OFF   = "#2a1a0a"    # inactive / secondary button background
-BTN_HOVER = "#7a1818"    # primary button hover
+BTN_OFF   = "#3E4451"    # secondary / inactive button background
+BTN_HOVER = "#BE5046"    # primary button hover (darker red)
 
-# ── Fonts ────────────────────────────────────────────────────────────────────
-FONT_HERO   = ("Georgia", 28, "bold")
-FONT_CITY   = ("Georgia", 12)
-FONT_LABEL  = ("Georgia", 10, "bold")
-FONT_ENTRY  = ("Georgia", 11)
-FONT_BTN    = ("Georgia", 11, "bold")
-FONT_BODY   = ("Georgia", 10)
-FONT_TITLE  = ("Georgia", 11, "bold")
-FONT_PLAYER = ("Georgia", 12, "bold")
-FONT_STATS  = ("Georgia", 9)
-FONT_SMALL  = ("Georgia", 9)
-FONT_BUTTON = ("Georgia", 10, "bold")
-FONT_HINT   = ("Georgia", 8)
+# ── Fonts (Segoe UI — clean sans-serif) ──────────────────────────────────────
+_SANS = "Segoe UI"
+
+FONT_HERO   = (_SANS, 24, "bold")
+FONT_CITY   = (_SANS, 11)
+FONT_LABEL  = (_SANS, 9,  "bold")
+FONT_ENTRY  = (_SANS, 10)
+FONT_BTN    = (_SANS, 10, "bold")
+FONT_BODY   = (_SANS, 10)
+FONT_TITLE  = (_SANS, 10, "bold")
+FONT_PLAYER = (_SANS, 12, "bold")
+FONT_STATS  = (_SANS, 9)
+FONT_SMALL  = (_SANS, 9)
+FONT_BUTTON = (_SANS, 10, "bold")
+FONT_HINT   = (_SANS, 8)
 
 # ── Player token colours (plain-name → hex) ───────────────────────────────────
 _PLAYER_COLORS: dict[str, str] = {
-    "red":    "#c43030",
-    "yellow": "#c49a3c",
-    "green":  "#2e8c2e",
-    "black":  "#aaaaaa",
-    "blue":   "#2255d4",
+    "red":    "#E06C75",
+    "yellow": "#E5C07B",
+    "green":  "#98C379",
+    "black":  "#ABB2BF",
+    "blue":   "#61AFEF",
 }
 
 # ── Setup-screen slot definitions (colour_name, hex, display_label) ──────────
 PLAYER_SLOTS: list[tuple[str, str, str]] = [
-    ("red",    "#c43030", "RED"),
-    ("yellow", "#c49a3c", "YELLOW"),
-    ("green",  "#2e8c2e", "GREEN"),
-    ("black",  "#aaaaaa", "BLACK"),
-    ("blue",   "#2255d4", "BLUE"),
+    ("red",    "#E06C75", "RED"),
+    ("yellow", "#E5C07B", "YELLOW"),
+    ("green",  "#98C379", "GREEN"),
+    ("black",  "#ABB2BF", "BLACK"),
+    ("blue",   "#61AFEF", "BLUE"),
 ]
