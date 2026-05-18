@@ -51,7 +51,7 @@ class MapView:
         self.game = game
         self.on_route_click = on_route_click
 
-        self.bg_image_original = Image.open("london_map.png")
+        self.bg_image_original = Image.open("map.png")
         self.bg_photo = None
 
         self.wood_bg_original = Image.open("wood.jpg")

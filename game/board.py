@@ -7,13 +7,20 @@ class Board:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.cities: dict[str, tuple[int, int]] = {
+        self.cities = {
             name: tuple(coords)
             for name, coords in data["cities"].items()
         }
 
-        self.routes: list[Route] = [
-            self._parse_route(r) for r in data["routes"]
+        self.routes = [
+            Route(
+                r["a"],
+                r["b"],
+                r["length"],
+                getattr(RouteColor, r.get("color", "GRAY")),
+                ferry_locos=r.get("ferry_locos", 0)
+            )
+            for r in data["routes"]
         ]
 
     def _parse_route(self, r: dict) -> Route:
