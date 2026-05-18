@@ -38,7 +38,8 @@ class Board:
             Route("King's Cross", "British Museum", 2, "black"),
             Route("Baker Street", "Hyde Park", 4, "black"),
             Route("The Charterhouse", "St Paul's", 1, "black"),
-            Route("Tower of London", "Elephant & Castle", 4, "black"),
+            # Ferry: Tower of London → Elephant & Castle — 1 loco required
+            Route("Tower of London", "Elephant & Castle", 4, "black", ferry_locos=1),
             # Yellow
             Route("Regent's Park", "British Museum", 3, "yellow"),
             Route("Big Ben", "Elephant & Castle", 3, "yellow"),
@@ -54,9 +55,11 @@ class Board:
             Route("Baker Street", "Piccadilly Circus", 4),
             Route("Buckingham Palace", "Trafalgar Square", 2),
             Route("Piccadilly Circus", "British Museum", 2),
-            Route("Trafalgar Square", "Waterloo", 2),
+            # Ferry: Trafalgar Square → Waterloo — 1 loco required
+            Route("Trafalgar Square", "Waterloo", 2, ferry_locos=1),
             Route("Trafalgar Square", "Big Ben", 1),
-            Route("Globe Theatre", "Tower of London", 3),
+            # Ferry: Globe Theatre → Tower of London — 2 locos required
+            Route("Globe Theatre", "Tower of London", 3, ferry_locos=2),
             # Double routes
             Route("Hyde Park", "Piccadilly Circus", 2),
             Route("Hyde Park", "Piccadilly Circus", 2, "blue"),

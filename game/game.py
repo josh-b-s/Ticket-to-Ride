@@ -48,7 +48,9 @@ class Game:
 
     def add_player(self, name: str) -> Player | None:
         name = name.strip()
-        if not name or any(p.name.lower() == name.lower() for p in self.players):
+        if not name or any(
+            p.name.lower() == name.lower() for p in self.players
+        ):
             return None
         player = Player(name)
         self.players.append(player)
@@ -138,20 +140,63 @@ class Game:
         route: Route,
         chosen_color: str | None = None,
     ) -> list | None:
-        """Select the cards to spend, preferring color cards over locomotives."""
+        """
+        Select the exact cards to spend when claiming *route*.
+
+        For ferry routes, locomotives are committed to ferry slots first
+        (1 loco per slot).  Any ferry slot the player cannot cover with a
+        loco is instead covered by 3 color cards (the substitution rule).
+        Spare locomotives then act as wilds for the remaining color slots.
+        """
         required_color = (
             route.color if route.color is not None else chosen_color
         )
         if required_color is None:
             return None
 
-        matching = [c for c in player.train_cards if c.color == required_color]
-        if len(matching) >= route.length:
-            return matching[: route.length]
+        loco_cards = [c for c in player.train_cards if c.is_locomotive()]
+        color_cards = [
+            c for c in player.train_cards if c.color == required_color
+        ]
 
-        locos = [c for c in player.train_cards if c.is_locomotive()]
-        combined = matching + locos
-        return combined[: route.length] if len(combined) >= route.length else None
+        if not route.is_ferry():
+            # Standard selection: color cards first, then locos as wilds.
+            if len(color_cards) >= route.length:
+                return color_cards[: route.length]
+            combined = color_cards + loco_cards
+            return (
+                combined[: route.length]
+                if len(combined) >= route.length
+                else None
+            )
+
+        # ---- Ferry selection ----------------------------------------
+        L = route.ferry_locos
+        color_slots = route.length - L
+
+        # Step 1: commit locos to ferry slots.
+        locos_for_ferry = min(len(loco_cards), L)
+        selected = loco_cards[:locos_for_ferry]
+        remaining_locos = loco_cards[locos_for_ferry:]
+        ferry_shortage = L - locos_for_ferry
+
+        # Step 2: substitute each missing ferry loco with 3 color cards.
+        color_cards_needed_for_shortage = ferry_shortage * 3
+        if len(color_cards) < color_cards_needed_for_shortage:
+            return None  # Should have been caught by validator.
+        selected += color_cards[:color_cards_needed_for_shortage]
+        leftover_color = color_cards[color_cards_needed_for_shortage:]
+
+        # Step 3: cover remaining color slots — spare locos first, then
+        # color cards.
+        locos_for_color = min(len(remaining_locos), color_slots)
+        selected += remaining_locos[:locos_for_color]
+        color_slots_still_uncovered = color_slots - locos_for_color
+        if len(leftover_color) < color_slots_still_uncovered:
+            return None
+        selected += leftover_color[:color_slots_still_uncovered]
+
+        return selected
 
     def remove_cards_from_hand(self, player: Player, cards: list) -> None:
         for card in cards:
@@ -163,8 +208,8 @@ class Game:
         """
         Attempt to claim *route* for the current player.
 
-        Validation is delegated entirely to MoveValidator so this method
-        only handles state mutation on a valid claim.
+        Delegates all validation to MoveValidator; only mutates state on
+        a valid claim.
         """
         player = self.current_player()
         if player is None:
@@ -182,7 +227,6 @@ class Game:
 
         cards = self.select_cards_for_route(player, route, chosen_color)
         if cards is None:
-            # Should not happen if validator passed — guard against logic drift.
             return ValidationResult(
                 ok=False,
                 reason="Card selection failed unexpectedly.",
@@ -211,6 +255,9 @@ class Game:
             )
         else:
             message = f"{player.name} claimed {route_desc}."
+
+        if route.is_ferry():
+            message += " (Ferry)"
 
         self.next_player()
         return ValidationResult(ok=True, reason=message)
