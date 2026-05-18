@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from player import Player
-    from route import Route
+    from game.classes.player import Player
+    from game.classes.route import Route
 
 
 @dataclass

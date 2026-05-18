@@ -1,16 +1,16 @@
 # game.py
 from __future__ import annotations
 
-from board import Board
-from card_service import CardService
-from game_state import GameState
-from move_validator import ValidationResult
-from player import Player
-from route_service import RouteService
-from scoring_service import ScoringService
-from ticket_service import TicketService
-from train_deck import TrainDeck
-from turn_manager import TurnManager
+from game.classes.board import Board
+from game.services.card_service import CardService
+from game.services.game_state import GameState
+from game.services.move_validator import ValidationResult
+from game.classes.player import Player
+from game.services.route_service import RouteService
+from game.services.scoring_service import ScoringService
+from game.services.ticket_service import TicketService
+from game.classes.train_deck import TrainDeck
+from game.services.turn_manager import TurnManager
 
 
 class Game:

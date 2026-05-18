@@ -1,12 +1,7 @@
 # game_state.py
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
-from board import Board
-from destination_ticket import DestinationTicket
-from player import Player
-from train_deck import TrainDeck
+from dataclasses import dataclass
 
 
 @dataclass
