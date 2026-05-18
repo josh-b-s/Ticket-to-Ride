@@ -6,10 +6,43 @@ _END_GAP = 18
 _MID_GAP = 6
 _ROUTE_OFFSET = 12
 
-# Ferry loco slot appearance.
-_FERRY_LOCO_COLOR = "#1a3a5c"   # dark navy for loco slots
-_FERRY_MARKER_BG = "#0d2237"    # even darker for the anchor badge
-_FERRY_MARKER_FG = "#e8f4fc"    # light text
+# Ferry badge colours.
+_FERRY_LOCO_COLOR = "#1a3a5c"
+_FERRY_MARKER_BG = "#0d2237"
+_FERRY_MARKER_FG = "#e8f4fc"
+
+# ── Color helpers ──────────────────────────────────────────────────────────
+# Canonical hex for every colour that can appear on a route or player token.
+_COLOR_HEX: dict[str, str] = {
+    "red":       "#cc2200",
+    "yellow":    "#c8a800",
+    "green":     "#1a7a1a",
+    "black":     "#2a2a2a",
+    "blue":      "#1a3acc",
+    "orange":    "#d06000",
+    "pink":      "#c83898",
+    "white":     "#d8d8d8",
+    "lightgray": "#909090",
+    "locomotive": "#606060",
+}
+
+
+def _to_hex(color: str) -> str:
+    """Return a reliable hex string for *color*, falling back to gray."""
+    return _COLOR_HEX.get(color.lower(), "#808080")
+
+
+def _adjust(hex_color: str, factor: float) -> str:
+    """
+    Lighten (factor > 1) or darken (factor < 1) a hex colour.
+    Returns a '#rrggbb' string, clamped to [0, 255].
+    """
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    r = min(255, max(0, int(r * factor)))
+    g = min(255, max(0, int(g * factor)))
+    b = min(255, max(0, int(b * factor)))
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 class MapView:
@@ -90,48 +123,62 @@ class MapView:
                 continue
 
             tag = f"route_{idx}"
-            outline_width = max(12, int(14 * scale))
-            route_width = max(8, int(10 * scale))
-            hitbox_width = max(18, int(20 * scale))
+            slot_w = max(12, int(14 * scale))   # white outline (the slot border)
+            slot_fill_w = max(8, int(10 * scale))  # gray or route-color fill
 
-            # White outline for the full route line.
+            # ── White outline for the whole route line ──
             self.canvas.create_line(
                 x1o, y1o, x2o, y2o,
                 fill="white",
-                width=outline_width,
+                width=slot_w,
                 capstyle="round",
                 tags=(tag,),
             )
 
-            # Draw each segment — ferry loco slots get a distinct colour.
+            # ── Draw each segment ──
             for seg_idx, (sx, sy, ex, ey) in enumerate(segments):
                 is_loco_slot = (
                     route.is_ferry() and seg_idx < route.ferry_locos
                 )
-                fill_color = (
-                    _FERRY_LOCO_COLOR
-                    if is_loco_slot
-                    else self._route_color(route)
-                )
 
-                # Invisible wide hitbox for easier clicking.
+                # Wide invisible hitbox for easy clicking.
                 self.canvas.create_line(
                     sx, sy, ex, ey,
                     fill="",
-                    width=hitbox_width,
+                    width=max(18, int(20 * scale)),
                     capstyle="round",
                     tags=(tag,),
                 )
-                # Visible coloured segment.
-                self.canvas.create_line(
-                    sx, sy, ex, ey,
-                    fill=fill_color,
-                    width=route_width,
-                    capstyle="butt",
-                    tags=(tag,),
-                )
 
-            # Anchor badge on each loco slot.
+                if route.is_claimed():
+                    player_color = route.owner_player.color or "black"
+                    slot_color = (
+                        _FERRY_LOCO_COLOR
+                        if is_loco_slot
+                        else _to_hex(player_color)
+                    )
+                    self._draw_train_piece(
+                        sx, sy, ex, ey,
+                        color=slot_color,
+                        scale=scale,
+                        tag=tag,
+                    )
+                else:
+                    # Empty slot — flat fill in route color or gray.
+                    slot_color = (
+                        _FERRY_LOCO_COLOR
+                        if is_loco_slot
+                        else (route.color or "lightgray")
+                    )
+                    self.canvas.create_line(
+                        sx, sy, ex, ey,
+                        fill=slot_color,
+                        width=slot_fill_w,
+                        capstyle="butt",
+                        tags=(tag,),
+                    )
+
+            # ── Ferry anchor badges ──
             if route.is_ferry():
                 self._draw_ferry_markers(
                     segments[: route.ferry_locos], scale, tag
@@ -141,16 +188,91 @@ class MapView:
                 tag, "<Button-1>", lambda e, r=route: self.on_route_click(r)
             )
 
+    def _draw_train_piece(
+        self,
+        sx: float,
+        sy: float,
+        ex: float,
+        ey: float,
+        color: str,
+        scale: float,
+        tag: str,
+    ) -> None:
+        """
+        Draw a single train carriage piece centred on the segment sx,sy→ex,ey.
+
+        Layers (bottom to top):
+          1. Dark shadow border — slightly wider, darkened colour, round caps.
+          2. Main carriage body — player colour, round caps, inset from ends.
+          3. Highlight line — thin, lightened colour, offset toward the
+             perpendicular "up" direction for a subtle raised-surface look.
+        """
+        dx, dy = ex - sx, ey - sy
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+
+        # Unit vectors along and perpendicular to the route.
+        ux, uy = dx / length, dy / length
+        px, py = -uy, ux  # perpendicular (rotated 90°)
+
+        # Inset the piece endpoints so there is a visible gap at each end,
+        # making individual carriages clearly distinct.
+        inset = max(2, int(3 * scale))
+        sx_i = sx + ux * inset
+        sy_i = sy + uy * inset
+        ex_i = ex - ux * inset
+        ey_i = ey - uy * inset
+
+        piece_w = max(6, int(8 * scale))
+        border_w = piece_w + max(2, int(2.5 * scale))
+        highlight_w = max(1, int(1.5 * scale))
+        perp_offset = max(1, int(1.5 * scale))
+
+        hex_color = color if color.startswith("#") else _to_hex(color)
+        dark_color = _adjust(hex_color, 0.55)
+        light_color = _adjust(hex_color, 1.45)
+
+        # 1. Shadow / border — drawn first so it sits under the piece.
+        self.canvas.create_line(
+            sx_i, sy_i, ex_i, ey_i,
+            fill=dark_color,
+            width=border_w,
+            capstyle="round",
+            tags=(tag,),
+        )
+
+        # 2. Main carriage body.
+        self.canvas.create_line(
+            sx_i, sy_i, ex_i, ey_i,
+            fill=hex_color,
+            width=piece_w,
+            capstyle="round",
+            tags=(tag,),
+        )
+
+        # 3. Highlight — offset perpendicular to the route direction by
+        #    perp_offset pixels, giving the illusion of a curved top surface.
+        hx1 = sx_i + px * perp_offset
+        hy1 = sy_i + py * perp_offset
+        hx2 = ex_i + px * perp_offset
+        hy2 = ey_i + py * perp_offset
+
+        self.canvas.create_line(
+            hx1, hy1, hx2, hy2,
+            fill=light_color,
+            width=highlight_w,
+            capstyle="round",
+            tags=(tag,),
+        )
+
     def _draw_ferry_markers(
         self,
         loco_segments: list,
         scale: float,
         route_tag: str,
     ) -> None:
-        """
-        Draw a small anchor badge in the centre of each ferry loco slot.
-        The badge is a dark oval with an anchor character inside.
-        """
+        """Draw a small anchor badge on each ferry loco slot."""
         badge_r = max(5, int(7 * scale))
         font_size = max(6, int(7 * scale))
 
@@ -158,21 +280,16 @@ class MapView:
             cx = (sx + ex) / 2
             cy = (sy + ey) / 2
 
-            # Dark oval badge.
             self.canvas.create_oval(
-                cx - badge_r,
-                cy - badge_r,
-                cx + badge_r,
-                cy + badge_r,
+                cx - badge_r, cy - badge_r,
+                cx + badge_r, cy + badge_r,
                 fill=_FERRY_MARKER_BG,
                 outline=_FERRY_MARKER_FG,
                 width=1,
                 tags=(route_tag,),
             )
-            # Anchor symbol — ⚓ renders on most platforms; fallback to "L".
             self.canvas.create_text(
-                cx,
-                cy,
+                cx, cy,
                 text="⚓",
                 fill=_FERRY_MARKER_FG,
                 font=("Arial", font_size),
@@ -187,19 +304,14 @@ class MapView:
             self.canvas.create_oval(
                 x - r - 2, y - r - 2,
                 x + r + 2, y + r + 2,
-                fill="white",
-                outline="",
+                fill="white", outline="",
             )
             self.canvas.create_oval(
-                x - r, y - r,
-                x + r, y + r,
-                fill="black",
-                outline="",
+                x - r, y - r, x + r, y + r,
+                fill="black", outline="",
             )
             self._draw_outlined_text(
-                x,
-                y - 14 * scale,
-                city,
+                x, y - 14 * scale, city,
                 font=("Georgia", max(6, int(6 * scale)), "bold"),
             )
 
@@ -231,11 +343,6 @@ class MapView:
             if tuple(sorted([r.city_a, r.city_b])) == key
         ]
 
-    def _route_color(self, route) -> str:
-        if route.is_claimed():
-            return route.owner_player.color or "black"
-        return route.color or "lightgray"
-
     @staticmethod
     def _offset_line(x1, y1, x2, y2, offset) -> tuple:
         dx, dy = x2 - x1, y2 - y1
@@ -244,10 +351,8 @@ class MapView:
             return x1, y1, x2, y2
         px, py = -dy / length, dx / length
         return (
-            x1 + px * offset,
-            y1 + py * offset,
-            x2 + px * offset,
-            y2 + py * offset,
+            x1 + px * offset, y1 + py * offset,
+            x2 + px * offset, y2 + py * offset,
         )
 
     @staticmethod
@@ -294,9 +399,9 @@ class MapView:
         resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         self.bg_photo = ImageTk.PhotoImage(resized)
 
-        x = (w - new_w) // 2
-        y = (h - new_h) // 2
-        self.canvas.create_image(x, y, image=self.bg_photo, anchor="nw")
+        x_pos = (w - new_w) // 2
+        y_pos = (h - new_h) // 2
+        self.canvas.create_image(x_pos, y_pos, image=self.bg_photo, anchor="nw")
 
     def _draw_wood_background(self) -> None:
         w = self.canvas.winfo_width()
@@ -308,4 +413,6 @@ class MapView:
             (w, h), Image.Resampling.LANCZOS
         )
         self.wood_bg_photo = ImageTk.PhotoImage(img)
-        self.canvas.create_image(0, 0, image=self.wood_bg_photo, anchor="nw")
+        self.canvas.create_image(
+            0, 0, image=self.wood_bg_photo, anchor="nw"
+        )
