@@ -9,8 +9,9 @@ class Player:
         self.train_cards: list = []
         self.destination_tickets: list = []
         self.color: str | None = None
-        self.stations: int = 3
         self.completed_tickets: int = 0
+        # NOTE: `stations` removed — it was declared but never used anywhere
+        # in the game logic.  Add back if station mechanics are implemented.
 
     def __str__(self) -> str:
         return f"{self.name}  |  Score: {self.score}  |  Trains: {self.trains}"
@@ -20,5 +21,9 @@ class Player:
 
     def card_color_summary(self) -> list[str]:
         """Return distinct non-locomotive colors in hand (sorted)."""
-        colors = {card.color for card in self.train_cards if card.color != "locomotive"}
+        colors = {
+            card.color
+            for card in self.train_cards
+            if card.color != "locomotive"
+        }
         return sorted(colors)

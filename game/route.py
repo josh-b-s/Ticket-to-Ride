@@ -12,7 +12,6 @@ class RouteColor(Enum):
     YELLOW = "#FAEA00"
     ORANGE = "#F08C00"
     PINK = "#E35C98"
-    WHITE = "#EBEBEB"
     GRAY = "#B0B0B3"
 
 

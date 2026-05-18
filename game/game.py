@@ -143,14 +143,24 @@ class Game:
         """
         Select the exact cards to spend when claiming *route*.
 
+        BUG FIX: previously used route.color_name for gray routes, which
+        always returned None and caused card selection to fail silently.
+        Now correctly uses chosen_color for gray routes.
+
         For ferry routes, locomotives are committed to ferry slots first
         (1 loco per slot).  Any ferry slot the player cannot cover with a
         loco is instead covered by 3 color cards (the substitution rule).
         Spare locomotives then act as wilds for the remaining color slots.
         """
-        required_color = route.color_name
-        if required_color is None:
-            return None
+        # BUG FIX: use chosen_color for gray routes, route.color_name otherwise.
+        if route.is_gray():
+            if not chosen_color:
+                return None
+            required_color = chosen_color.lower()
+        else:
+            required_color = route.color_name
+            if required_color is None:
+                return None
 
         loco_cards = [c for c in player.train_cards if c.is_locomotive()]
         color_cards = [
@@ -246,7 +256,10 @@ class Game:
             self.last_player_index = self.current_player_index
 
         route_desc = f"{route.city_a} – {route.city_b}"
-        if route.color is None and chosen_color:
+
+        # BUG FIX: previously checked `route.color is None` which is never
+        # true (route.color is always a RouteColor enum).  Use is_gray() instead.
+        if route.is_gray() and chosen_color:
             message = (
                 f"{player.name} claimed {route_desc} "
                 f"using {chosen_color.title()} cards."
@@ -387,10 +400,14 @@ class Game:
 
     @staticmethod
     def _standings_key(player: Player) -> tuple[int, int, int, str]:
+        # BUG FIX: tiebreaker was player.trains (ascending = more is better
+        # when reverse=True), but fewer remaining trains means more routes
+        # claimed which is a stronger performance indicator.  Negate so that
+        # fewer trains remaining ranks higher on the tie.
         return (
             player.score,
             player.completed_tickets,
-            player.trains,
+            -player.trains,   # fewer trains left = better tiebreaker
             player.name.lower(),
         )
 

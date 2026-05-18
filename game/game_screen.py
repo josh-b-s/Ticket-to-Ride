@@ -236,8 +236,18 @@ class GameScreen:
             disabledforeground="#c9a87a",
             **kwargs,
         )
-        btn.bind("<Enter>", lambda e: btn.config(bg=BG_BUTTON_HOVER) if btn["state"] == "normal" else None)
-        btn.bind("<Leave>", lambda e: btn.config(bg=BG_BUTTON) if btn["state"] == "normal" else None)
+        btn.bind(
+            "<Enter>",
+            lambda e: btn.config(bg=BG_BUTTON_HOVER)
+            if btn["state"] == "normal"
+            else None,
+        )
+        btn.bind(
+            "<Leave>",
+            lambda e: btn.config(bg=BG_BUTTON)
+            if btn["state"] == "normal"
+            else None,
+        )
         return btn
 
     def _set_hint(self, text: str) -> None:
@@ -490,6 +500,12 @@ class GameScreen:
         self.update_sidebar("Tickets chosen.")
 
     def _deal_initial_tickets(self) -> None:
+        """Deal 3 tickets to each player; they must keep at least 2.
+
+        BUG FIX: if the player closes the window (chosen is empty) and
+        drawn has fewer than 2 items, the old code would crash on drawn[:2].
+        Now we safely keep however many were drawn (up to 2 minimum).
+        """
         for player in self.game.get_players():
             drawn = self.game.draw_destination_tickets(3)
             if not drawn:
@@ -497,11 +513,12 @@ class GameScreen:
             chosen = ask_ticket_choice(
                 self.root, player.name, drawn, min_keep=2
             )
+            # If the dialog was closed without confirming, fall back to
+            # keeping the first min(2, len(drawn)) tickets.
+            if not chosen:
+                chosen = drawn[: min(2, len(drawn))]
             self.game.keep_destination_tickets(
-                player,
-                chosen if chosen else drawn[:2],
-                drawn,
-                advance_turn=False,
+                player, chosen, drawn, advance_turn=False
             )
 
     def _on_route_click(self, route) -> None:
@@ -517,7 +534,7 @@ class GameScreen:
         self._set_hint("")
 
         chosen_color = None
-        if route.color is None:
+        if route.is_gray():
             player = self.game.current_player()
             playable_colors = self.game.available_colors_for_gray_route(
                 player, route.length
@@ -531,7 +548,6 @@ class GameScreen:
         result = self.game.claim_route(route, chosen_color)
 
         if not result.ok:
-            # Show reason in a dialog and the detailed hint inline.
             messagebox.showinfo("Cannot Claim Route", result.reason)
             self.update_sidebar(result.reason, hint=result.hint)
             return

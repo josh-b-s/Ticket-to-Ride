@@ -28,10 +28,10 @@ class MoveValidator:
 
     def validate_claim(
         self,
-        player: Player,
-        route: Route,
+        player: "Player",
+        route: "Route",
         chosen_color: Optional[str],
-        all_routes: list[Route],
+        all_routes: list["Route"],
         player_count: int,
     ) -> ValidationResult:
         """
@@ -83,13 +83,20 @@ class MoveValidator:
                 hint="Claim shorter routes to spend your remaining trains.",
             )
 
-        required_color = route.color_name
-        if required_color is None:
-            return ValidationResult(
-                ok=False,
-                reason="No colour selected for the gray route.",
-                hint="",
-            )
+        # BUG FIX: for gray routes use chosen_color; for coloured routes use
+        # route.color_name.  Previously route.color_name was always used, which
+        # returns None for gray routes and caused every gray-route claim to fail
+        # immediately with "No colour selected" regardless of the dialog choice.
+        if route.is_gray():
+            if not chosen_color:
+                return ValidationResult(
+                    ok=False,
+                    reason="No colour selected for the gray route.",
+                    hint="Pick a colour you have enough cards of.",
+                )
+            required_color = chosen_color.lower()
+        else:
+            required_color = route.color_name  # always a non-None string here
 
         if route.is_ferry():
             return self._validate_ferry(player, route, required_color)
@@ -100,8 +107,8 @@ class MoveValidator:
 
     def _validate_standard(
         self,
-        player: Player,
-        route: Route,
+        player: "Player",
+        route: "Route",
         required_color: str,
     ) -> ValidationResult:
         """Validate a non-ferry route claim."""
@@ -129,8 +136,8 @@ class MoveValidator:
 
     def _validate_ferry(
         self,
-        player: Player,
-        route: Route,
+        player: "Player",
+        route: "Route",
         required_color: str,
     ) -> ValidationResult:
         """
@@ -138,7 +145,7 @@ class MoveValidator:
 
         Ferry rules:
           - ferry_locos slots must each be covered by 1 locomotive card.
-          - If the player is short on locomotives, any 3 cards substitute
+          - If the player is short on locomotives, any 3 color cards substitute
             for each missing locomotive (spending more cards in total).
           - Remaining (length - ferry_locos) color slots use color cards,
             with extra locomotives usable as wilds.

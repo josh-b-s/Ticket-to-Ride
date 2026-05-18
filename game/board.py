@@ -7,26 +7,25 @@ class Board:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.cities = {
+        self.cities: dict[str, tuple[int, int]] = {
             name: tuple(coords)
             for name, coords in data["cities"].items()
         }
 
-        self.routes = [
-            Route(
-                r["a"],
-                r["b"],
-                r["length"],
-                getattr(RouteColor, r.get("color", "GRAY")),
-                ferry_locos=r.get("ferry_locos", 0)
-            )
-            for r in data["routes"]
+        self.routes: list[Route] = [
+            self._parse_route(r) for r in data["routes"]
         ]
 
-    def _parse_route(self, r: dict) -> Route:
-        color_name = r.get("color", "GRAY")
-        color = RouteColor[color_name.upper()]
-
+    @staticmethod
+    def _parse_route(r: dict) -> Route:
+        """Parse a single route dict from board.json into a Route object."""
+        color_name = r.get("color", "GRAY").upper()
+        try:
+            color = RouteColor[color_name]
+        except KeyError:
+            raise ValueError(
+                f"Unknown route color {color_name!r} in board data."
+            )
         return Route(
             r["a"],
             r["b"],
