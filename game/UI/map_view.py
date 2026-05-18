@@ -1,8 +1,9 @@
 import math
 import tkinter as tk
-
+from pathlib import Path
 from PIL import Image, ImageTk, ImageEnhance
 
+_ASSETS = Path(__file__).parent.parent
 _END_GAP = 18
 _MID_GAP = 6
 _ROUTE_OFFSET = 12
@@ -51,10 +52,10 @@ class MapView:
         self.game = game
         self.on_route_click = on_route_click
 
-        self.bg_image_original = Image.open("../map.png")
+        self.bg_image_original = Image.open(_ASSETS / "map.png")
         self.bg_photo = None
 
-        self.wood_bg_original = Image.open("../wood.jpg")
+        self.wood_bg_original = Image.open(_ASSETS / "wood.jpg")
         self.wood_bg_photo = None
 
         self.canvas = tk.Canvas(

@@ -1,15 +1,16 @@
-# game.py
 from __future__ import annotations
 
+from typing import Callable
+
 from game.classes.board import Board
+from game.classes.player import Player
+from game.classes.train_deck import TrainDeck
 from game.services.card_service import CardService
 from game.services.game_state import GameState
 from game.services.move_validator import ValidationResult
-from game.classes.player import Player
 from game.services.route_service import RouteService
 from game.services.scoring_service import ScoringService
 from game.services.ticket_service import TicketService
-from game.classes.train_deck import TrainDeck
 from game.services.turn_manager import TurnManager
 
 
@@ -24,7 +25,9 @@ class Game:
         self.scoring = ScoringService(self.state)
         self.routes_service = RouteService(self.state, self.cards, self.turns)
 
-        self.on_game_end = None
+        self.on_game_end: Callable | None = None
+
+    # ── Convenience properties (proxy to GameState) ──────────────────────────
 
     @property
     def train_deck(self):
@@ -70,6 +73,8 @@ class Game:
     def final_standings(self, value):
         self.state.final_standings = value
 
+    # ── Queries ──────────────────────────────────────────────────────────────
+
     def get_players(self):
         return self.state.players
 
@@ -78,6 +83,11 @@ class Game:
 
     def get_bounds(self):
         return self.state.board.get_bounds()
+
+    def get_face_up_cards(self):
+        return self.state.train_deck.get_face_up()
+
+    # ── Setup ─────────────────────────────────────────────────────────────────
 
     def add_player(self, name: str) -> Player | None:
         name = name.strip()
@@ -107,19 +117,37 @@ class Game:
             p.completed_tickets = 0
 
         self.tickets.build_destination_deck()
+
         for p in self.state.players:
             for _ in range(4):
                 card = self.state.train_deck.draw()
                 if card:
                     p.train_cards.append(card)
 
+    # ── Turn flow ─────────────────────────────────────────────────────────────
+
     def current_player(self):
         return self.turns.current_player()
 
-    def next_player(self):
+    def next_player(self) -> None:
+        """Advance to the next player and trigger end-game if appropriate.
+
+        This is the single authoritative place for last-round detection so that
+        _end_game() (scoring, standings, callback) is never accidentally skipped.
+        """
+        if not self.state.players:
+            return
+
         self.turns.next_player()
-        if self.state.game_over:
+
+        if (
+            self.state.last_round_triggered
+            and self.state.current_player_index == self.state.last_player_index
+            and not self.state.game_over
+        ):
             self._end_game()
+
+    # ── Actions ───────────────────────────────────────────────────────────────
 
     def draw_train_card_from_deck(self, player):
         return self.cards.draw_from_deck(player)
@@ -131,16 +159,31 @@ class Game:
         return self.cards.available_colors_for_gray_route(player, route_length)
 
     def claim_route(self, route, chosen_color=None) -> ValidationResult:
-        return self.routes_service.claim_route(route, chosen_color)
+        """Claim a route and advance the turn.
+
+        RouteService handles validation and state mutation.
+        Turn advancement lives here so next_player() (with its last-round
+        and end-game logic) always fires after a successful claim.
+        """
+        result = self.routes_service.claim_route(route, chosen_color)
+        if result.ok:
+            self.next_player()
+        return result
 
     def draw_destination_tickets(self, count=3):
         return self.tickets.draw(count)
 
     def keep_destination_tickets(self, player, chosen, drawn, advance_turn=True):
-        ok, reason = self.tickets.keep_tickets(player, chosen, drawn, advance_turn)
+        ok, reason = self.tickets.keep_tickets(player, chosen, drawn)
         if advance_turn:
-            self.turns.next_player()
+            self.next_player()
         return ok, reason
+
+    # ── End game ──────────────────────────────────────────────────────────────
+
+    def _standings_key(self, player: Player) -> tuple:
+        """Tiebreaker key used for final standings sorting."""
+        return (player.score, player.completed_tickets, -player.trains, player.name.lower())
 
     def _end_game(self) -> None:
         self.state.game_over = True
@@ -156,10 +199,9 @@ class Game:
 
         self.state.final_standings = sorted(
             self.state.players,
-            key=lambda p: (p.score, p.completed_tickets, -p.trains, p.name.lower()),
+            key=self._standings_key,
             reverse=True,
         )
 
         if self.on_game_end:
             self.on_game_end(route_lengths)
-

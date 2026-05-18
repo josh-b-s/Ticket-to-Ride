@@ -1,10 +1,9 @@
 # route_service.py
 from __future__ import annotations
 
-from game_state import GameState
-from move_validator import MoveValidator, ValidationResult
-from player import Player
-from route import Route
+from game.classes.route import Route
+from game.services.game_state import GameState
+from game.services.move_validator import MoveValidator, ValidationResult
 
 _ROUTE_POINTS: dict[int, int] = {1: 1, 2: 2, 3: 4, 4: 7, 5: 10, 6: 15}
 _LAST_ROUND_THRESHOLD = 2
@@ -18,6 +17,12 @@ class RouteService:
         self.validator = MoveValidator()
 
     def claim_route(self, route: Route, chosen_color: str | None = None) -> ValidationResult:
+        """Validate and apply a route claim for the current player.
+
+        Turn advancement is intentionally NOT done here — it is the
+        responsibility of Game.claim_route() so that last-round detection
+        and _end_game() always execute in the correct order.
+        """
         player = self.turn_manager.current_player()
         if player is None:
             return ValidationResult(ok=False, reason="No current player.")
@@ -51,7 +56,7 @@ class RouteService:
             self.state.last_round_triggered = True
             self.state.last_player_index = self.state.current_player_index
 
-        route_desc = f"{route.city_a} – {route.city_b}"
+        route_desc = f"{route.city_a} \u2014 {route.city_b}"
         if route.is_gray() and chosen_color:
             message = f"{player.name} claimed {route_desc} using {chosen_color.title()} cards."
         else:
@@ -60,5 +65,4 @@ class RouteService:
         if route.is_ferry():
             message += " (Ferry)"
 
-        self.turn_manager.next_player()
         return ValidationResult(ok=True, reason=message)

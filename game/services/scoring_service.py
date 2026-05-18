@@ -1,8 +1,8 @@
 # scoring_service.py
 from __future__ import annotations
 
-from game_state import GameState
-from player import Player
+from game.classes.player import Player
+from game.services.game_state import GameState
 
 
 class ScoringService:

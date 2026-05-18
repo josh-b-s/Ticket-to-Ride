@@ -1,6 +1,6 @@
 import random
 
-from train_card import TrainCard
+from game.classes.train_card import TrainCard
 
 _FACE_UP_SIZE = 5
 _MAX_LOCO_FIX_ATTEMPTS = 10

@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import random
 
-from destination_ticket import DestinationTicket
-from game_state import GameState
-from player import Player
+from game.classes.destination_ticket import DestinationTicket
+from game.classes.player import Player
+from game.services.game_state import GameState
 
 
 class TicketService:
@@ -49,7 +49,6 @@ class TicketService:
         player: Player,
         chosen: list[DestinationTicket],
         drawn: list[DestinationTicket],
-        advance_turn: bool = True,
     ) -> tuple[bool, str]:
         if not chosen:
             return False, "You must keep at least 1 ticket."

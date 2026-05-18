@@ -1,5 +1,5 @@
 import json
-from route import Route, RouteColor
+from game.classes.route import Route, RouteColor
 
 
 class Board:
