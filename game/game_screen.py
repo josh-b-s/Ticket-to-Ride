@@ -6,33 +6,45 @@ from dialogs import ask_gray_route_color, ask_ticket_choice
 from map_view import MapView
 from train_card import TrainCard
 
-# ── Palette ────────────────────────────────────────────────────────────────
-BG_MAIN = "#e6d3a3"
-BG_PANEL = "#d2b48c"
-BG_DARK = "#5a3e2b"
-BG_BUTTON = "#8b5a2b"
-BG_BUTTON_HOVER = "#a06b35"
-BG_BUTTON_DISABLED = "#b5976d"
-BG_LIST = "#fff8dc"
-BG_HINT = "#fdf3d0"
-FG_LIGHT = "#fff8dc"
-FG_DARK = "#2b1b12"
-FG_HINT = "#6b4c1e"
+# ── Palette ───────────────────────────────────────────────────────────────────
+# Core surfaces
+BG_MAIN    = "#160d08"   # espresso – root / map surround
+BG_PANEL   = "#221409"   # sidebar / bottom-bar fill
+BG_DARK    = "#0f0804"   # deepest tone – dividers, borders
+BG_SURFACE = "#2e1c0e"   # listbox / card backgrounds
 
-FONT_TITLE = ("Georgia", 12, "bold")
-FONT_SUBTITLE = ("Georgia", 10, "bold")
-FONT_BODY = ("Georgia", 10)
-FONT_BUTTON = ("Georgia", 10, "bold")
-FONT_HINT = ("Georgia", 9, "italic")
+# Accents
+ACCENT_RED  = "#9e2020"  # TTR signal red – primary action buttons
+ACCENT_GOLD = "#c49a3c"  # railway gold – headers, dividers, highlights
+GOLD_DIM    = "#5a3e10"  # dimmer gold – subtle borders
 
-# Map raw player color names to colors that are legible on BG_LIST.
+# Text
+FG_PRIMARY  = "#f0e6d0"  # warm cream – main text on dark
+FG_GOLD     = "#c49a3c"  # gold – section headings
+FG_MUTED    = "#7a5c3a"  # muted brown – secondary / disabled text
+FG_HINT     = "#9e7040"  # slightly lighter muted for hint panel
+
+# Button states
+BTN_HOVER   = "#b52828"
+BTN_OFF     = "#3d2414"  # secondary / cancel button bg
+
+# Map player token colors (legible on dark lists)
 _PLAYER_COLORS: dict[str, str] = {
-    "red": "#bb1a00",
-    "yellow": "#8b6914",
-    "green": "#1e6b1e",
-    "black": "#1a1a1a",
-    "blue": "#1a2ecc",
+    "red":    "#e03030",
+    "yellow": "#d4a030",
+    "green":  "#30a030",
+    "black":  "#cccccc",
+    "blue":   "#3070e0",
 }
+
+# ── Typography ────────────────────────────────────────────────────────────────
+FONT_TITLE  = ("Georgia", 11, "bold")
+FONT_BODY   = ("Georgia", 10)
+FONT_SMALL  = ("Georgia", 9)
+FONT_BUTTON = ("Georgia", 10, "bold")
+FONT_HINT   = ("Georgia", 9, "italic")
+FONT_PLAYER = ("Georgia", 13, "bold")
+FONT_STATS  = ("Georgia", 10)
 
 
 class GameScreen:
@@ -43,7 +55,7 @@ class GameScreen:
         self.root.configure(bg=BG_MAIN)
         self.root.title("Ticket to Ride: London")
 
-        self._action_mode: str = "main"  # "main" | "draw"
+        self._action_mode: str = "main"   # "main" | "draw"
         self._draws_remaining: int = 0
         self._cards_drawn_this_turn: int = 0
         self._pending_tickets: list = []
@@ -53,7 +65,7 @@ class GameScreen:
         self._deal_initial_tickets()
         self.update_sidebar()
 
-    # ================================================================ layout
+    # ═══════════════════════════════════════════════════════════════ layout ═══
 
     def _build_layout(self) -> None:
         self.frame = tk.Frame(self.root, bg=BG_MAIN)
@@ -62,38 +74,35 @@ class GameScreen:
         main_area = tk.Frame(self.frame, bg=BG_MAIN)
         main_area.pack(fill="both", expand=True)
 
+        # Map panel – no heavy border, just a 1 px gold hairline
         board_frame = tk.Frame(
             main_area,
-            bg="#cdbb8f",
-            bd=6,
-            relief="ridge",
-            highlightbackground=BG_DARK,
-            highlightthickness=2,
+            bg=BG_DARK,
+            highlightbackground=GOLD_DIM,
+            highlightthickness=1,
         )
         board_frame.pack(side="left", fill="both", expand=True)
 
+        # Sidebar
         self.side_frame = tk.Frame(
             main_area,
-            width=300,
-            padx=12,
-            pady=12,
+            width=290,
+            padx=14,
+            pady=10,
             bg=BG_PANEL,
-            bd=5,
-            relief="ridge",
-            highlightbackground=BG_DARK,
-            highlightthickness=2,
+            highlightbackground=GOLD_DIM,
+            highlightthickness=1,
         )
         self.side_frame.pack(side="right", fill="y")
         self.side_frame.pack_propagate(False)
 
+        # Bottom bar
         self.bottom_bar = tk.Frame(
             self.frame,
-            height=210,
+            height=200,
             bg=BG_DARK,
-            bd=4,
-            relief="raised",
-            highlightbackground="#3b271c",
-            highlightthickness=2,
+            highlightbackground=GOLD_DIM,
+            highlightthickness=1,
         )
         self.bottom_bar.pack(side="bottom", fill="x")
         self.bottom_bar.pack_propagate(False)
@@ -104,169 +113,189 @@ class GameScreen:
         self._build_sidebar()
         self._build_bottom_bar()
 
+    # ──────────────────────────────────────────────────────── sidebar ─────────
+
     def _build_sidebar(self) -> None:
-        self._sidebar_section("Players")
+        self._section_header("Players")
 
         self.player_list = tk.Listbox(
             self.side_frame,
-            height=8,
-            bg=BG_LIST,
-            fg=FG_DARK,
+            height=6,
+            bg=BG_SURFACE,
+            fg=FG_PRIMARY,
             font=FONT_BODY,
-            bd=3,
-            relief="sunken",
-            selectbackground=BG_BUTTON,
-            selectforeground=FG_LIGHT,
-            highlightthickness=0,
+            bd=0,
+            relief="flat",
+            selectbackground=ACCENT_RED,
+            selectforeground=FG_PRIMARY,
+            highlightthickness=1,
+            highlightbackground=GOLD_DIM,
+            highlightcolor=ACCENT_GOLD,
             activestyle="none",
         )
         self.player_list.pack(fill="x")
 
-        self._sidebar_divider()
-        self._sidebar_section("Turn Information")
+        self._divider()
+        self._section_header("Turn Info")
 
         self.info_label = tk.Label(
             self.side_frame,
             text="",
-            wraplength=255,
+            wraplength=250,
             justify="left",
             anchor="w",
             bg=BG_PANEL,
-            fg=FG_DARK,
+            fg=FG_PRIMARY,
             font=FONT_BODY,
         )
         self.info_label.pack(fill="x", pady=(0, 2))
 
-        # Hint label — shown only when a move fails.
+        # Hint label – only packed when there's something to show
         self.hint_label = tk.Label(
             self.side_frame,
             text="",
-            wraplength=255,
+            wraplength=250,
             justify="left",
             anchor="w",
-            bg=BG_HINT,
+            bg=BG_SURFACE,
             fg=FG_HINT,
             font=FONT_HINT,
-            bd=1,
-            relief="groove",
-            padx=6,
-            pady=4,
+            padx=8,
+            pady=5,
         )
-        # Not packed until there is a hint to show.
 
-        self._sidebar_divider()
-        self._sidebar_section("Actions")
+        self._divider()
+        self._section_header("Actions")
 
         self.action_frame = tk.Frame(self.side_frame, bg=BG_PANEL)
-        self.action_frame.pack(fill="x", pady=6)
+        self.action_frame.pack(fill="x", pady=4)
+
+    # ──────────────────────────────────────────────────── bottom bar ──────────
 
     def _build_bottom_bar(self) -> None:
-        inner = tk.Frame(self.bottom_bar, bg=BG_DARK, padx=14, pady=12)
+        inner = tk.Frame(self.bottom_bar, bg=BG_DARK, padx=14, pady=10)
         inner.pack(fill="both", expand=True)
 
+        # Player name + stats header
+        header = tk.Frame(inner, bg=BG_DARK)
+        header.pack(fill="x", pady=(0, 8))
+
         self.bottom_player_label = tk.Label(
-            inner,
+            header,
             text="",
-            fg=FG_LIGHT,
+            fg=ACCENT_GOLD,
             bg=BG_DARK,
-            font=("Georgia", 13, "bold"),
+            font=FONT_PLAYER,
         )
-        self.bottom_player_label.pack(anchor="w")
+        self.bottom_player_label.pack(side="left")
 
         self.bottom_stats_label = tk.Label(
-            inner,
+            header,
             text="",
-            fg=FG_LIGHT,
+            fg=FG_MUTED,
             bg=BG_DARK,
-            font=FONT_BODY,
+            font=FONT_STATS,
         )
-        self.bottom_stats_label.pack(anchor="w", pady=(0, 8))
+        self.bottom_stats_label.pack(side="left", padx=(14, 0))
 
+        # Gold hairline under header
+        tk.Frame(inner, height=1, bg=GOLD_DIM).pack(fill="x", pady=(0, 8))
+
+        # Two list boxes side by side
         content = tk.Frame(inner, bg=BG_DARK)
         content.pack(fill="both", expand=True)
 
         list_opts = dict(
-            height=8,
-            bg=BG_LIST,
-            fg=FG_DARK,
-            font=FONT_BODY,
-            bd=3,
-            relief="sunken",
-            selectbackground=BG_BUTTON,
-            selectforeground=FG_LIGHT,
-            highlightthickness=0,
+            height=5,
+            bg=BG_SURFACE,
+            fg=FG_PRIMARY,
+            font=FONT_SMALL,
+            bd=0,
+            relief="flat",
+            selectbackground=ACCENT_RED,
+            selectforeground=FG_PRIMARY,
+            highlightthickness=1,
+            highlightbackground=GOLD_DIM,
+            highlightcolor=ACCENT_GOLD,
             activestyle="none",
         )
+
         self.card_list = tk.Listbox(content, **list_opts)
-        self.card_list.pack(
-            side="left", fill="both", expand=True, padx=(0, 6)
-        )
+        self.card_list.pack(side="left", fill="both", expand=True, padx=(0, 6))
 
         self.ticket_list_bottom = tk.Listbox(content, **list_opts)
         self.ticket_list_bottom.pack(side="left", fill="both", expand=True)
 
-    # ================================================================ helpers
+    # ══════════════════════════════════════════════════════════════ helpers ════
 
-    def _sidebar_section(self, title: str) -> None:
+    def _section_header(self, title: str) -> None:
+        """Gold uppercase section label."""
         tk.Label(
             self.side_frame,
-            text=title,
-            font=FONT_TITLE,
+            text=title.upper(),
+            font=("Georgia", 9, "bold"),
             bg=BG_PANEL,
-            fg=FG_DARK,
-        ).pack(anchor="w", pady=(10, 4))
+            fg=ACCENT_GOLD,
+            anchor="w",
+        ).pack(anchor="w", pady=(12, 4))
 
-    def _sidebar_divider(self) -> None:
-        tk.Frame(self.side_frame, height=1, bg=BG_DARK).pack(
+    def _divider(self) -> None:
+        """1 px gold hairline divider."""
+        tk.Frame(self.side_frame, height=1, bg=GOLD_DIM).pack(
             fill="x", pady=(4, 0)
         )
 
-    def _styled_button(self, parent, **kwargs) -> tk.Button:
+    def _styled_button(self, parent, primary: bool = True, **kwargs) -> tk.Button:
+        """
+        primary=True  → signal-red action button
+        primary=False → secondary / muted button
+        """
+        bg_normal = ACCENT_RED if primary else BTN_OFF
+        bg_hover   = BTN_HOVER  if primary else "#3d2814"
+        fg_normal  = FG_PRIMARY if primary else FG_MUTED
+
         btn = tk.Button(
             parent,
-            bg=BG_BUTTON,
-            fg=FG_LIGHT,
+            bg=bg_normal,
+            fg=fg_normal,
             font=FONT_BUTTON,
-            relief="raised",
-            bd=3,
-            activebackground=BG_BUTTON_HOVER,
-            activeforeground=FG_LIGHT,
+            relief="flat",
+            bd=0,
+            activebackground=bg_hover,
+            activeforeground=FG_PRIMARY,
             cursor="hand2",
             highlightthickness=0,
-            disabledforeground="#c9a87a",
+            disabledforeground=FG_MUTED,
             **kwargs,
         )
         btn.bind(
             "<Enter>",
-            lambda e: btn.config(bg=BG_BUTTON_HOVER)
-            if btn["state"] == "normal"
-            else None,
+            lambda e: btn.config(bg=bg_hover)
+            if btn["state"] == "normal" else None,
         )
         btn.bind(
             "<Leave>",
-            lambda e: btn.config(bg=BG_BUTTON)
-            if btn["state"] == "normal"
-            else None,
+            lambda e: btn.config(bg=bg_normal)
+            if btn["state"] == "normal" else None,
         )
         return btn
 
     def _set_hint(self, text: str) -> None:
-        """Show or hide the hint label depending on whether text is provided."""
         if text:
-            self.hint_label.config(text=f"ℹ  {text}")
+            self.hint_label.config(text=f"›  {text}")
             self.hint_label.pack(fill="x", pady=(0, 6))
         else:
             self.hint_label.config(text="")
             self.hint_label.pack_forget()
 
-    # ================================================================ sidebar updates
+    # ════════════════════════════════════════════════════════ sidebar updates ══
 
     def update_sidebar(self, message: str = "", hint: str = "") -> None:
         self.player_list.delete(0, "end")
         for i, p in enumerate(self.game.get_players()):
-            color_label = p.color.title() if p.color else "Unassigned"
-            self.player_list.insert("end", f"[{color_label}] {p}")
-            fg = _PLAYER_COLORS.get(p.color or "", FG_DARK)
+            color_label = p.color.title() if p.color else "—"
+            self.player_list.insert("end", f"  {color_label:<8}  {p}")
+            fg = _PLAYER_COLORS.get(p.color or "", FG_PRIMARY)
             self.player_list.itemconfig(i, fg=fg)
 
         self.info_label.config(text=message)
@@ -287,65 +316,67 @@ class GameScreen:
         if getattr(self.game, "game_over", False):
             tk.Label(
                 self.action_frame,
-                text="Game finished. No actions available.",
+                text="Game finished.",
                 bg=BG_PANEL,
-                fg=FG_DARK,
+                fg=FG_MUTED,
                 font=FONT_BODY,
-                wraplength=240,
-                justify="left",
             ).pack(anchor="w", pady=4)
             return
 
         tk.Label(
             self.action_frame,
-            text="Choose one action for this turn:",
+            text="Choose an action for this turn:",
             bg=BG_PANEL,
-            fg=FG_DARK,
-            font=FONT_BODY,
+            fg=FG_MUTED,
+            font=("Georgia", 9),
         ).pack(anchor="w", pady=(0, 6))
 
         self._styled_button(
             self.action_frame,
+            primary=True,
             text="Draw Train Cards",
             command=self._start_draw_action,
-        ).pack(fill="x", pady=3)
+        ).pack(fill="x", pady=3, ipady=4)
 
         self._styled_button(
             self.action_frame,
+            primary=False,
             text="Draw Destination Tickets",
             command=self._start_ticket_draw,
-        ).pack(fill="x", pady=3)
+        ).pack(fill="x", pady=3, ipady=4)
 
     def _render_draw_actions(self) -> None:
         tk.Label(
             self.action_frame,
             text=f"Draws remaining: {self._draws_remaining}",
             bg=BG_PANEL,
-            fg=FG_DARK,
-            font=FONT_SUBTITLE,
-        ).pack(pady=(0, 4))
+            fg=ACCENT_GOLD,
+            font=FONT_TITLE,
+        ).pack(pady=(0, 6))
 
         self._styled_button(
             self.action_frame,
+            primary=True,
             text="Draw From Deck",
             command=self._draw_from_deck,
-        ).pack(fill="x", pady=3)
+        ).pack(fill="x", pady=3, ipady=4)
 
         cancel_label = (
-            "Cancel (Back)" if self._cards_drawn_this_turn == 0 else "Finish Turn"
+            "Cancel" if self._cards_drawn_this_turn == 0 else "Finish Turn"
         )
         self._styled_button(
             self.action_frame,
+            primary=False,
             text=cancel_label,
             command=self._cancel_or_finish_draw,
-        ).pack(fill="x", pady=3)
+        ).pack(fill="x", pady=3, ipady=4)
 
         tk.Label(
             self.action_frame,
             text="Face-up cards:",
             bg=BG_PANEL,
-            fg=FG_DARK,
-            font=FONT_BODY,
+            fg=FG_MUTED,
+            font=("Georgia", 9),
         ).pack(anchor="w", pady=(10, 4))
 
         for i, card in enumerate(self.game.train_deck.get_face_up()):
@@ -355,41 +386,42 @@ class GameScreen:
             can_pick = card is not None and not is_loco_second
             self._styled_button(
                 self.action_frame,
+                primary=can_pick,
                 text="Empty" if card is None else str(card),
                 state="normal" if can_pick else "disabled",
                 command=lambda idx=i: self._draw_from_face_up(idx),
-            ).pack(fill="x", pady=2)
+            ).pack(fill="x", pady=2, ipady=3)
 
     def _update_bottom_bar(self) -> None:
         player = self.game.current_player()
         if not player:
             return
 
-        self.bottom_player_label.config(text=f"{player.name}'s Turn")
+        self.bottom_player_label.config(text=f"{player.name}")
         self.bottom_stats_label.config(
             text=(
-                f"Score: {player.score}  |  Trains: {player.trains}  |  "
-                f"Train cards: {len(player.train_cards)}  |  "
+                f"Score: {player.score}   Trains: {player.trains}   "
+                f"Cards: {len(player.train_cards)}   "
                 f"Tickets: {len(player.destination_tickets)}"
             )
         )
 
         self.card_list.delete(0, "end")
-        self.card_list.insert("end", "Train Cards Summary")
-        self.card_list.insert("end", "─" * 22)
+        self.card_list.insert("end", "  TRAIN CARDS")
+        self.card_list.insert("end", "  " + "─" * 20)
         summary = self._build_card_summary(player.train_cards)
         if not summary:
-            self.card_list.insert("end", "No cards")
+            self.card_list.insert("end", "  No cards")
         for color, count in summary:
-            self.card_list.insert("end", f"{color.title():<12} x{count}")
+            self.card_list.insert("end", f"  {color.title():<13} ×{count}")
 
         self.ticket_list_bottom.delete(0, "end")
-        self.ticket_list_bottom.insert("end", "Destination Tickets")
-        self.ticket_list_bottom.insert("end", "─" * 22)
+        self.ticket_list_bottom.insert("end", "  DESTINATION TICKETS")
+        self.ticket_list_bottom.insert("end", "  " + "─" * 20)
         if not player.destination_tickets:
-            self.ticket_list_bottom.insert("end", "No tickets")
+            self.ticket_list_bottom.insert("end", "  No tickets")
         for t in player.destination_tickets:
-            self.ticket_list_bottom.insert("end", str(t))
+            self.ticket_list_bottom.insert("end", f"  {t}")
 
     @staticmethod
     def _build_card_summary(cards: list) -> list[tuple[str, int]]:
@@ -400,7 +432,7 @@ class GameScreen:
                 counts[card.color] += 1
         return [(color, counts[color]) for color in order if counts[color] > 0]
 
-    # ================================================================ actions
+    # ══════════════════════════════════════════════════════════════ actions ════
 
     def _start_draw_action(self) -> None:
         if getattr(self.game, "game_over", False):
@@ -468,7 +500,7 @@ class GameScreen:
         if self._cards_drawn_this_turn == 0:
             self._action_mode = "main"
             self._draws_remaining = 0
-            self.update_sidebar("Returned to main menu.")
+            self.update_sidebar()
         else:
             self._finish_draw_action("Finished drawing train cards.")
 
@@ -500,12 +532,6 @@ class GameScreen:
         self.update_sidebar("Tickets chosen.")
 
     def _deal_initial_tickets(self) -> None:
-        """Deal 3 tickets to each player; they must keep at least 2.
-
-        BUG FIX: if the player closes the window (chosen is empty) and
-        drawn has fewer than 2 items, the old code would crash on drawn[:2].
-        Now we safely keep however many were drawn (up to 2 minimum).
-        """
         for player in self.game.get_players():
             drawn = self.game.draw_destination_tickets(3)
             if not drawn:
@@ -513,8 +539,6 @@ class GameScreen:
             chosen = ask_ticket_choice(
                 self.root, player.name, drawn, min_keep=2
             )
-            # If the dialog was closed without confirming, fall back to
-            # keeping the first min(2, len(drawn)) tickets.
             if not chosen:
                 chosen = drawn[: min(2, len(drawn))]
             self.game.keep_destination_tickets(
@@ -525,12 +549,9 @@ class GameScreen:
         if getattr(self.game, "game_over", False):
             return
         if self._action_mode != "main":
-            messagebox.showinfo(
-                "Turn", "Finish your current action first."
-            )
+            messagebox.showinfo("Turn", "Finish your current action first.")
             return
 
-        # Clear any previous hint when the player tries a new action.
         self._set_hint("")
 
         chosen_color = None
@@ -555,7 +576,7 @@ class GameScreen:
         self.map_view.draw()
         self.update_sidebar(result.reason)
 
-    # ---- game over ────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────── game over ───────
 
     def _on_game_end(self, route_lengths: dict) -> None:
         lines = ["Game Over!\n"]
