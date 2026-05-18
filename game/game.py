@@ -148,9 +148,7 @@ class Game:
         loco is instead covered by 3 color cards (the substitution rule).
         Spare locomotives then act as wilds for the remaining color slots.
         """
-        required_color = (
-            route.color if route.color is not None else chosen_color
-        )
+        required_color = route.color_name
         if required_color is None:
             return None
 

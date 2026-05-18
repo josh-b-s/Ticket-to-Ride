@@ -1,5 +1,6 @@
 import math
 import tkinter as tk
+
 from PIL import Image, ImageTk, ImageEnhance
 
 _END_GAP = 18
@@ -7,29 +8,28 @@ _MID_GAP = 6
 _ROUTE_OFFSET = 12
 
 # Ferry badge colours.
-_FERRY_LOCO_COLOR = "#1a3a5c"
 _FERRY_MARKER_BG = "#0d2237"
 _FERRY_MARKER_FG = "#e8f4fc"
 
-# ── Color helpers ──────────────────────────────────────────────────────────
-# Canonical hex for every colour that can appear on a route or player token.
-_COLOR_HEX: dict[str, str] = {
-    "red":       "#cc2200",
-    "yellow":    "#c8a800",
-    "green":     "#1a7a1a",
-    "black":     "#2a2a2a",
-    "blue":      "#1a3acc",
-    "orange":    "#d06000",
-    "pink":      "#c83898",
-    "white":     "#d8d8d8",
-    "lightgray": "#909090",
-    "locomotive": "#606060",
+# -- Player color lookup
+# Route slot colors come directly from RouteColor.value (hex strings).
+# This table covers only player token colors (plain strings from SetupScreen)
+# and locomotive cards.
+_PLAYER_COLOR_HEX: dict[str, str] = {
+    "red": "#c01800",
+    "yellow": "#c49200",
+    "green": "#27862a",
+    "black": "#2a2a2a",
+    "blue": "#1966d2",
+    "locomotive": "#4a4a4a",
 }
+
+_GRAY_SLOT = "#B0B0B3"
 
 
 def _to_hex(color: str) -> str:
-    """Return a reliable hex string for *color*, falling back to gray."""
-    return _COLOR_HEX.get(color.lower(), "#808080")
+    """Return hex for a player token color string, falling back to gray."""
+    return _PLAYER_COLOR_HEX.get(color.lower(), "#808080")
 
 
 def _adjust(hex_color: str, factor: float) -> str:
@@ -92,7 +92,7 @@ class MapView:
         return scale, ox, oy
 
     def _scale_point(
-        self, x: float, y: float, scale: float, ox: float, oy: float
+            self, x: float, y: float, scale: float, ox: float, oy: float
     ):
         return x * scale + ox, y * scale + oy
 
@@ -114,7 +114,7 @@ class MapView:
                 (i for i, (gi, _) in enumerate(group) if gi == idx), 0
             )
             offset = (
-                (group_index - (len(group) - 1) / 2) * (_ROUTE_OFFSET * scale)
+                    (group_index - (len(group) - 1) / 2) * (_ROUTE_OFFSET * scale)
             )
             x1o, y1o, x2o, y2o = self._offset_line(x1, y1, x2, y2, offset)
 
@@ -123,7 +123,7 @@ class MapView:
                 continue
 
             tag = f"route_{idx}"
-            slot_w = max(12, int(14 * scale))   # white outline (the slot border)
+            slot_w = max(12, int(14 * scale))  # white outline (the slot border)
             slot_fill_w = max(8, int(10 * scale))  # gray or route-color fill
 
             # ── White outline for the whole route line ──
@@ -137,9 +137,6 @@ class MapView:
 
             # ── Draw each segment ──
             for seg_idx, (sx, sy, ex, ey) in enumerate(segments):
-                is_loco_slot = (
-                    route.is_ferry() and seg_idx < route.ferry_locos
-                )
 
                 # Wide invisible hitbox for easy clicking.
                 self.canvas.create_line(
@@ -152,11 +149,9 @@ class MapView:
 
                 if route.is_claimed():
                     player_color = route.owner_player.color or "black"
-                    slot_color = (
-                        _FERRY_LOCO_COLOR
-                        if is_loco_slot
-                        else _to_hex(player_color)
-                    )
+
+                    slot_color = _to_hex(player_color)
+
                     self._draw_train_piece(
                         sx, sy, ex, ey,
                         color=slot_color,
@@ -164,12 +159,9 @@ class MapView:
                         tag=tag,
                     )
                 else:
-                    # Empty slot — flat fill in route color or gray.
-                    slot_color = (
-                        _FERRY_LOCO_COLOR
-                        if is_loco_slot
-                        else (route.color or "lightgray")
-                    )
+                    # Empty slot — always use route base colour or gray
+                    slot_color = route.color_hex or _GRAY_SLOT
+
                     self.canvas.create_line(
                         sx, sy, ex, ey,
                         fill=slot_color,
@@ -189,14 +181,14 @@ class MapView:
             )
 
     def _draw_train_piece(
-        self,
-        sx: float,
-        sy: float,
-        ex: float,
-        ey: float,
-        color: str,
-        scale: float,
-        tag: str,
+            self,
+            sx: float,
+            sy: float,
+            ex: float,
+            ey: float,
+            color: str,
+            scale: float,
+            tag: str,
     ) -> None:
         """
         Draw a single train carriage piece centred on the segment sx,sy→ex,ey.
@@ -267,10 +259,10 @@ class MapView:
         )
 
     def _draw_ferry_markers(
-        self,
-        loco_segments: list,
-        scale: float,
-        route_tag: str,
+            self,
+            loco_segments: list,
+            scale: float,
+            route_tag: str,
     ) -> None:
         """Draw a small anchor badge on each ferry loco slot."""
         badge_r = max(5, int(7 * scale))
@@ -316,13 +308,13 @@ class MapView:
             )
 
     def _draw_outlined_text(
-        self,
-        x: float,
-        y: float,
-        text: str,
-        font,
-        fill: str = "black",
-        outline: str = "white",
+            self,
+            x: float,
+            y: float,
+            text: str,
+            font,
+            fill: str = "black",
+            outline: str = "white",
     ) -> None:
         for dx, dy in [
             (-1, -1), (1, -1), (-1, 1), (1, 1),
@@ -364,7 +356,7 @@ class MapView:
 
         ux, uy = dx / length, dy / length
         usable = (
-            length - (2 * _END_GAP) - (_MID_GAP * (route_length - 1))
+                length - (2 * _END_GAP) - (_MID_GAP * (route_length - 1))
         )
         if usable <= 0:
             return []

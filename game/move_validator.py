@@ -83,7 +83,7 @@ class MoveValidator:
                 hint="Claim shorter routes to spend your remaining trains.",
             )
 
-        required_color = route.color if route.color is not None else chosen_color
+        required_color = route.color_name
         if required_color is None:
             return ValidationResult(
                 ok=False,
