@@ -28,7 +28,6 @@ class SetupScreen:
 
         # Title
         tk.Label(centre, text="TICKET TO RIDE", font=FONT_HERO, bg=BG, fg=ACCENT_GOLD).pack()
-        tk.Label(centre, text="L  O  N  D  O  N", font=FONT_CITY, bg=BG, fg=FG_MUTED).pack(pady=(4, 0))
 
         tk.Frame(centre, height=1, bg=ACCENT_GOLD).pack(fill="x", pady=22)
 
@@ -44,14 +43,18 @@ class SetupScreen:
             row = tk.Frame(centre, bg=BG_PANEL, pady=10, padx=16)
             row.pack(fill="x", pady=3)
 
-            dot = tk.Canvas(row, width=12, height=12, bg=BG_PANEL, highlightthickness=0)
-            dot.create_oval(0, 0, 12, 12, fill=hex_color, outline="")
-            dot.pack(side="left", padx=(0, 10))
+            focus_bg = "#363B45"
 
-            tk.Label(
-                row, text=label, font=FONT_LABEL, width=7, anchor="w",
-                bg=BG_PANEL, fg=hex_color,
-            ).pack(side="left")
+            label_widget = tk.Label(
+                row,
+                text='⬤  ' + label,
+                font=FONT_LABEL,
+                width=9,
+                anchor="w",
+                bg=BG_PANEL,
+                fg=hex_color,
+            )
+            label_widget.pack(side="left")
 
             tk.Frame(row, width=1, bg=GOLD_DIM).pack(side="left", fill="y", padx=(10, 14))
 
@@ -61,8 +64,21 @@ class SetupScreen:
                 highlightthickness=1, highlightcolor=ACCENT_GOLD, highlightbackground=GOLD_DIM,
             )
             entry.pack(side="left", ipady=3)
-            entry.bind("<FocusIn>",  lambda e, r=row: r.config(bg="#363B45"))
-            entry.bind("<FocusOut>", lambda e, r=row: r.config(bg=BG_PANEL))
+            entry.bind(
+                "<FocusIn>",
+                lambda e, r=row, l=label_widget: (
+                    r.config(bg=focus_bg),
+                    l.config(bg=focus_bg),
+                ),
+            )
+
+            entry.bind(
+                "<FocusOut>",
+                lambda e, r=row, l=label_widget: (
+                    r.config(bg=BG_PANEL),
+                    l.config(bg=BG_PANEL),
+                ),
+            )
 
             self.entries.append((color_name, entry))
 
