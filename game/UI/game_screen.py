@@ -177,12 +177,6 @@ class GameScreen:
         )
         card_outer.pack(fill="both", expand=True)
 
-        self.card_canvas = tk.Canvas(
-            card_outer,
-            bg=BG_SURFACE,
-            highlightthickness=0,
-            bd=0,
-        )
 
         style = ttk.Style()
 
@@ -206,35 +200,14 @@ class GameScreen:
             background=[("active", BTN_HOVER)],
         )
 
-        card_scroll = ttk.Scrollbar(
+        self.card_frame = tk.Frame(
             card_outer,
-            orient="vertical",
-            command=self.card_canvas.yview,
-            style="Dark.Vertical.TScrollbar",
+            bg=BG_SURFACE,
+            padx=6,
+            pady=6,
         )
 
-        self.card_canvas.configure(yscrollcommand=card_scroll.set)
-
-        card_scroll.pack(side="right", fill="y")
-        self.card_canvas.pack(side="left", fill="both", expand=True)
-
-        self.card_frame = tk.Frame(self.card_canvas, bg=BG_SURFACE)
-        self._bind_mousewheel(card_outer, self.card_canvas)
-        self._bind_mousewheel(self.card_canvas, self.card_canvas)
-
-        self.card_canvas.create_window(
-            (0, 0),
-            window=self.card_frame,
-            anchor="nw",
-        )
-
-        self.card_frame.bind(
-            "<Configure>",
-            lambda e: self.card_canvas.configure(
-                scrollregion=self.card_canvas.bbox("all")
-            ),
-        )
-
+        self.card_frame.pack(fill="both", expand=True)
         # ── Tickets ─────────────────────────────────────────────
 
         ticket_section = tk.Frame(content, bg=BG_DARK)
@@ -463,18 +436,29 @@ class GameScreen:
                 font=FONT_SMALL,
             ).pack(anchor="w", padx=10, pady=6)
 
-        for color, count in summary:
-            bg = _card_hex(color)
+        else:
+            for i, (color, count) in enumerate(summary):
+                bg = _card_hex(color)
 
-            tk.Label(
-                self.card_frame,
-                text=f"{color.title()} ×{count}",
-                bg=bg,
-                fg=_text_for_bg(bg),
-                font=FONT_SMALL,
-                padx=6,
-                pady=2,
-            ).pack(fill="x", padx=5, pady=1)
+                card = tk.Label(
+                    self.card_frame,
+                    text=f"{color.title()} ×{count}",
+                    bg=bg,
+                    fg=_text_for_bg(bg),
+                    font=FONT_SMALL,
+                    padx=8,
+                    pady=3,
+                )
+
+                card.grid(
+                    row=0,
+                    column=i,
+                    padx=4,
+                    pady=4,
+                    sticky="ew",
+                )
+
+                self.card_frame.grid_columnconfigure(i, weight=1)
 
         for w in self.ticket_frame.winfo_children():
             w.destroy()
