@@ -1,5 +1,5 @@
 class TrainCard:
-    COLORS = ["red", "blue", "green", "yellow", "black", "orange", "pink"]
+    COLORS = ["blue", "green", "yellow", "black", "orange", "pink"]
 
     def __init__(self, color: str) -> None:
         if color not in self.COLORS and color != "locomotive":

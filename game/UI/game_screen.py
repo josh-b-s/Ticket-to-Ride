@@ -13,15 +13,23 @@ from game.UI.theme import (
     FONT_STATS, FONT_TITLE, GOLD_DIM, _PLAYER_COLORS,
 )
 from game.classes.train_card import TrainCard
+from game.classes.route import RouteColor
+from tkinter import ttk
 
+TRAIN_CARD_COLORS = {
+    "blue": RouteColor.BLUE.value,
+    "green": RouteColor.GREEN.value,
+    "yellow": RouteColor.YELLOW.value,
+    "black": RouteColor.BLACK.value,
+    "orange": RouteColor.ORANGE.value,
+    "pink": RouteColor.PINK.value,
+    "locomotive": "#666666",
+}
 
 def _card_hex(color: str | None) -> str:
     if not color:
         return BTN_OFF
-    if color.lower() == "locomotive":
-        return "#666666"
-    return _PLAYER_COLORS.get(color.lower(), BTN_OFF)
-
+    return TRAIN_CARD_COLORS.get(color.lower(), BTN_OFF)
 
 def _text_for_bg(hex_color: str) -> str:
     h = hex_color.lstrip("#")
@@ -147,19 +155,143 @@ class GameScreen:
         content = tk.Frame(inner, bg=BG_DARK)
         content.pack(fill="both", expand=True)
 
-        list_opts = dict(
-            height=5, bg=BG_SURFACE, fg=FG_PRIMARY, font=FONT_SMALL,
-            bd=0, relief="flat", selectbackground=ACCENT_RED,
-            selectforeground=FG_PRIMARY, highlightthickness=1,
-            highlightbackground=GOLD_DIM, highlightcolor=ACCENT_GOLD,
-            activestyle="none",
+        # ── Train cards ─────────────────────────────────────────
+
+        train_section = tk.Frame(content, bg=BG_DARK)
+        train_section.pack(side="left", fill="both", expand=True, padx=(0, 6))
+
+        tk.Label(
+            train_section,
+            text="TRAIN CARDS",
+            bg=BG_DARK,
+            fg=ACCENT_GOLD,
+            font=FONT_LABEL,
+            anchor="w",
+        ).pack(fill="x", pady=(0, 3))
+
+        card_outer = tk.Frame(
+            train_section,
+            bg=BG_SURFACE,
+            highlightbackground=GOLD_DIM,
+            highlightthickness=1,
+        )
+        card_outer.pack(fill="both", expand=True)
+
+        self.card_canvas = tk.Canvas(
+            card_outer,
+            bg=BG_SURFACE,
+            highlightthickness=0,
+            bd=0,
         )
 
-        self.card_list = tk.Listbox(content, **list_opts)
-        self.card_list.pack(side="left", fill="both", expand=True, padx=(0, 6))
+        style = ttk.Style()
 
-        self.ticket_list_bottom = tk.Listbox(content, **list_opts)
-        self.ticket_list_bottom.pack(side="left", fill="both", expand=True)
+        style.theme_use("clam")
+
+        style.configure(
+            "Dark.Vertical.TScrollbar",
+            background=BG_PANEL,
+            troughcolor=BG_DARK,
+            bordercolor=BG_DARK,
+            arrowcolor=FG_MUTED,
+            darkcolor=BG_PANEL,
+            lightcolor=BG_PANEL,
+            gripcount=0,
+            relief="flat",
+            borderwidth=0,
+        )
+
+        style.map(
+            "Dark.Vertical.TScrollbar",
+            background=[("active", BTN_HOVER)],
+        )
+
+        card_scroll = ttk.Scrollbar(
+            card_outer,
+            orient="vertical",
+            command=self.card_canvas.yview,
+            style="Dark.Vertical.TScrollbar",
+        )
+
+        self.card_canvas.configure(yscrollcommand=card_scroll.set)
+
+        card_scroll.pack(side="right", fill="y")
+        self.card_canvas.pack(side="left", fill="both", expand=True)
+
+        self.card_frame = tk.Frame(self.card_canvas, bg=BG_SURFACE)
+        self._bind_mousewheel(card_outer, self.card_canvas)
+        self._bind_mousewheel(self.card_canvas, self.card_canvas)
+
+        self.card_canvas.create_window(
+            (0, 0),
+            window=self.card_frame,
+            anchor="nw",
+        )
+
+        self.card_frame.bind(
+            "<Configure>",
+            lambda e: self.card_canvas.configure(
+                scrollregion=self.card_canvas.bbox("all")
+            ),
+        )
+
+        # ── Tickets ─────────────────────────────────────────────
+
+        ticket_section = tk.Frame(content, bg=BG_DARK)
+        ticket_section.pack(side="left", fill="both", expand=True)
+
+        tk.Label(
+            ticket_section,
+            text="DESTINATION TICKETS",
+            bg=BG_DARK,
+            fg=ACCENT_GOLD,
+            font=FONT_LABEL,
+            anchor="w",
+        ).pack(fill="x", pady=(0, 3))
+
+        ticket_outer = tk.Frame(
+            ticket_section,
+            bg=BG_SURFACE,
+            highlightbackground=GOLD_DIM,
+            highlightthickness=1,
+        )
+        ticket_outer.pack(fill="both", expand=True)
+
+        self.ticket_canvas = tk.Canvas(
+            ticket_outer,
+            bg=BG_SURFACE,
+            highlightthickness=0,
+            bd=0,
+        )
+
+        ticket_scroll = ttk.Scrollbar(
+            ticket_outer,
+            orient="vertical",
+            command=self.ticket_canvas.yview,
+            style="Dark.Vertical.TScrollbar",
+        )
+
+        self.ticket_canvas.configure(yscrollcommand=ticket_scroll.set)
+
+        ticket_scroll.pack(side="right", fill="y")
+        self.ticket_canvas.pack(side="left", fill="both", expand=True)
+
+        self.ticket_frame = tk.Frame(self.ticket_canvas, bg=BG_SURFACE)
+        self._bind_mousewheel(ticket_outer, self.ticket_canvas)
+        self._bind_mousewheel(self.ticket_canvas, self.ticket_canvas)
+
+        self.ticket_canvas.create_window(
+            (0, 0),
+            window=self.ticket_frame,
+            anchor="nw",
+        )
+
+        self.ticket_frame.bind(
+            "<Configure>",
+            lambda e: self.ticket_canvas.configure(
+                scrollregion=self.ticket_canvas.bbox("all")
+            ),
+        )
 
     #  Sidebar helpers 
 
@@ -317,22 +449,57 @@ class GameScreen:
             )
         )
 
-        self.card_list.delete(0, "end")
-        self.card_list.insert("end", "  TRAIN CARDS")
-        self.card_list.insert("end", "  " + "" * 20)
-        summary = self._build_card_summary(player.train_cards)
-        if not summary:
-            self.card_list.insert("end", "  No cards")
-        for color, count in summary:
-            self.card_list.insert("end", f"  {color.title():<13} ×{count}")
+        for w in self.card_frame.winfo_children():
+            w.destroy()
 
-        self.ticket_list_bottom.delete(0, "end")
-        self.ticket_list_bottom.insert("end", "  DESTINATION TICKETS")
-        self.ticket_list_bottom.insert("end", "  " + "" * 20)
+        summary = self._build_card_summary(player.train_cards)
+
+        if not summary:
+            tk.Label(
+                self.card_frame,
+                text="No cards",
+                bg=BG_SURFACE,
+                fg=FG_MUTED,
+                font=FONT_SMALL,
+            ).pack(anchor="w", padx=10, pady=6)
+
+        for color, count in summary:
+            bg = _card_hex(color)
+
+            tk.Label(
+                self.card_frame,
+                text=f"{color.title()} ×{count}",
+                bg=bg,
+                fg=_text_for_bg(bg),
+                font=FONT_SMALL,
+                padx=6,
+                pady=2,
+            ).pack(fill="x", padx=5, pady=1)
+
+        for w in self.ticket_frame.winfo_children():
+            w.destroy()
+
         if not player.destination_tickets:
-            self.ticket_list_bottom.insert("end", "  No tickets")
+            tk.Label(
+                self.ticket_frame,
+                text="No tickets",
+                bg=BG_SURFACE,
+                fg=FG_MUTED,
+                font=FONT_SMALL,
+            ).pack(anchor="w", padx=10, pady=6)
+
         for t in player.destination_tickets:
-            self.ticket_list_bottom.insert("end", f"  {t}")
+            tk.Label(
+                self.ticket_frame,
+                text=str(t),
+                bg=BG_SURFACE,
+                fg=FG_PRIMARY,
+                font=FONT_SMALL,
+                anchor="w",
+                justify="left",
+                padx=6,
+                pady=2,
+            ).pack(fill="x", padx=3, pady=1)
 
     @staticmethod
     def _build_card_summary(cards: list) -> list[tuple[str, int]]:
@@ -502,3 +669,25 @@ class GameScreen:
                 lines.append("\nWinners (tie): " + ", ".join(p.name for p in ties))
 
         messagebox.showinfo("Game Over", "\n".join(lines))
+
+    def _bind_mousewheel(self, widget, canvas) -> None:
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-event.delta / 120), "units")
+
+        def _on_linux_up(event):
+            canvas.yview_scroll(-1, "units")
+
+        def _on_linux_down(event):
+            canvas.yview_scroll(1, "units")
+
+        widget.bind("<Enter>", lambda e: (
+            widget.bind_all("<MouseWheel>", _on_mousewheel),
+            widget.bind_all("<Button-4>", _on_linux_up),
+            widget.bind_all("<Button-5>", _on_linux_down),
+        ))
+
+        widget.bind("<Leave>", lambda e: (
+            widget.unbind_all("<MouseWheel>"),
+            widget.unbind_all("<Button-4>"),
+            widget.unbind_all("<Button-5>"),
+        ))
