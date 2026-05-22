@@ -4,15 +4,15 @@ from tkinter import messagebox
 from game.UI.game_screen import GameScreen
 from game.UI.theme import (
     ACCENT_GOLD, ACCENT_RED, BG_ENTRY, BG_MAIN as BG, BG_PANEL,
-    BTN_HOVER, BTN_OFF, FG_MUTED, FG_PRIMARY, FONT_BTN, FONT_CITY,
-    FONT_ENTRY, FONT_HERO, FONT_HINT, FONT_LABEL, GOLD_DIM, PLAYER_SLOTS,
+    BTN_HOVER, BTN_OFF, FG_MUTED, FG_PRIMARY, FONT_BTN, FONT_ENTRY,
+    FONT_HERO, FONT_HINT, FONT_LABEL, GOLD_DIM, PLAYER_SLOTS,
 )
 
 
 class SetupScreen:
-    def __init__(self, root: tk.Tk, game):
-        self.root = root
-        self.game = game
+    def __init__(self, root: tk.Tk, game) -> None:
+        self.root  = root
+        self.game  = game
         self.root.configure(bg=BG)
 
         self.frame = tk.Frame(self.root, bg=BG)
@@ -26,33 +26,23 @@ class SetupScreen:
         centre = tk.Frame(self.frame, bg=BG)
         centre.place(relx=0.5, rely=0.5, anchor="center")
 
-        # Title
         tk.Label(centre, text="TICKET TO RIDE", font=FONT_HERO, bg=BG, fg=ACCENT_GOLD).pack()
-
         tk.Frame(centre, height=1, bg=ACCENT_GOLD).pack(fill="x", pady=22)
-
         tk.Label(
-            centre, text="Enter 2 \u2013 5 player names to begin",
+            centre, text="Enter 2 – 5 player names to begin",
             font=FONT_HINT, bg=BG, fg=FG_MUTED,
         ).pack(pady=(0, 14))
 
-        # Player slots
         self.entries: list[tuple[str, tk.Entry]] = []
 
         for color_name, hex_color, label in PLAYER_SLOTS:
             row = tk.Frame(centre, bg=BG_PANEL, pady=10, padx=16)
             row.pack(fill="x", pady=3)
-
             focus_bg = "#363B45"
 
             label_widget = tk.Label(
-                row,
-                text='⬤  ' + label,
-                font=FONT_LABEL,
-                width=9,
-                anchor="w",
-                bg=BG_PANEL,
-                fg=hex_color,
+                row, text="◆  " + label, font=FONT_LABEL,
+                width=9, anchor="w", bg=BG_PANEL, fg=hex_color,
             )
             label_widget.pack(side="left")
 
@@ -64,27 +54,13 @@ class SetupScreen:
                 highlightthickness=1, highlightcolor=ACCENT_GOLD, highlightbackground=GOLD_DIM,
             )
             entry.pack(side="left", ipady=3)
-            entry.bind(
-                "<FocusIn>",
-                lambda e, r=row, l=label_widget: (
-                    r.config(bg=focus_bg),
-                    l.config(bg=focus_bg),
-                ),
-            )
-
-            entry.bind(
-                "<FocusOut>",
-                lambda e, r=row, l=label_widget: (
-                    r.config(bg=BG_PANEL),
-                    l.config(bg=BG_PANEL),
-                ),
-            )
+            entry.bind("<FocusIn>",  lambda e, r=row, l=label_widget: (r.config(bg=focus_bg), l.config(bg=focus_bg)))
+            entry.bind("<FocusOut>", lambda e, r=row, l=label_widget: (r.config(bg=BG_PANEL), l.config(bg=BG_PANEL)))
 
             self.entries.append((color_name, entry))
 
         tk.Frame(centre, height=1, bg=ACCENT_GOLD).pack(fill="x", pady=22)
 
-        # Buttons
         btn_row = tk.Frame(centre, bg=BG)
         btn_row.pack()
 
@@ -117,7 +93,7 @@ class SetupScreen:
             entry.delete(0, "end")
 
     def _start_game(self) -> None:
-        self.game.players.clear()
+        self.game.reset_players()
 
         filled = [
             (color, entry.get().strip())

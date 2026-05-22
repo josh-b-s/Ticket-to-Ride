@@ -15,79 +15,61 @@ from game.services.turn_manager import TurnManager
 
 
 class Game:
-    def __init__(self):
-        self.state = GameState()
+    """
+    Facade over the game services.
+
+    Exposes only *actions* and lightweight *queries*.  Raw state is on
+    ``game.state``; the board is accessible via the ``game.board`` shortcut
+    (one hop, not two) so UI code stays readable without needing 14 proxies.
+
+    Removed proxies compared to the original:
+      - players, cities, routes, train_deck, destination_deck,
+        game_over, final_standings  →  access via game.state directly.
+    Kept as properties:
+      - board  →  game.state.board  (map view needs this frequently enough
+                  that game.state.board.cities is an unwanted chain).
+    """
+
+    def __init__(self) -> None:
+        self.state  = GameState()
         self.state.board = Board()
 
-        self.turns = TurnManager(self.state)
-        self.cards = CardService(self.state)
-        self.tickets = TicketService(self.state)
-        self.scoring = ScoringService(self.state)
+        self.turns          = TurnManager(self.state)
+        self.cards          = CardService(self.state)
+        self.tickets        = TicketService(self.state)
+        self.scoring        = ScoringService(self.state)
         self.routes_service = RouteService(self.state, self.cards, self.turns)
 
         self.on_game_end: Callable | None = None
 
-    # ── Convenience properties (proxy to GameState) ──────────────────────────
+    # ── Single-hop shortcut (not a full proxy) ────────────────────────────────
 
     @property
-    def train_deck(self):
-        return self.state.train_deck
+    def board(self):
+        return self.state.board
 
-    @train_deck.setter
-    def train_deck(self, value):
-        self.state.train_deck = value
+    # ── Queries ───────────────────────────────────────────────────────────────
 
-    @property
-    def players(self):
+    def get_players(self) -> list[Player]:
         return self.state.players
 
-    @property
-    def cities(self):
-        return self.state.board.cities
-
-    @property
-    def routes(self):
-        return self.state.board.routes
-
-    @property
-    def destination_deck(self):
-        return self.state.destination_deck
-
-    @destination_deck.setter
-    def destination_deck(self, value):
-        self.state.destination_deck = value
-
-    @property
-    def game_over(self):
-        return self.state.game_over
-
-    @game_over.setter
-    def game_over(self, value):
-        self.state.game_over = value
-
-    @property
-    def final_standings(self):
-        return self.state.final_standings
-
-    @final_standings.setter
-    def final_standings(self, value):
-        self.state.final_standings = value
-
-    # ── Queries ──────────────────────────────────────────────────────────────
-
-    def get_players(self):
-        return self.state.players
+    def current_player(self) -> Player | None:
+        return self.turns.current_player()
 
     def get_routes(self, city_a: str, city_b: str):
         return self.state.board.get_routes(city_a, city_b)
 
-    def get_bounds(self):
+    def get_bounds(self) -> tuple[int, int, int, int]:
         return self.state.board.get_bounds()
 
     def get_face_up_cards(self):
         return self.state.train_deck.get_face_up()
 
     # ── Setup ─────────────────────────────────────────────────────────────────
+
+    def reset_players(self) -> None:
+        """Clear the player list before a new setup phase."""
+        self.state.players.clear()
 
     def add_player(self, name: str) -> Player | None:
         name = name.strip()
@@ -101,13 +83,13 @@ class Game:
         if len(self.state.players) < 2:
             raise ValueError("At least 2 players are required.")
 
-        self.state.board = Board()
-        self.state.train_deck = TrainDeck()
+        self.state.board                = Board()
+        self.state.train_deck           = TrainDeck()
         self.state.current_player_index = 0
         self.state.last_round_triggered = False
-        self.state.last_player_index = None
-        self.state.game_over = False
-        self.state.final_standings = []
+        self.state.last_player_index    = None
+        self.state.game_over            = False
+        self.state.final_standings      = []
 
         for p in self.state.players:
             p.score = 0
@@ -126,20 +108,11 @@ class Game:
 
     # ── Turn flow ─────────────────────────────────────────────────────────────
 
-    def current_player(self):
-        return self.turns.current_player()
-
     def next_player(self) -> None:
-        """Advance to the next player and trigger end-game if appropriate.
-
-        This is the single authoritative place for last-round detection so that
-        _end_game() (scoring, standings, callback) is never accidentally skipped.
-        """
+        """Advance to the next player and trigger end-game if appropriate."""
         if not self.state.players:
             return
-
         self.turns.next_player()
-
         if (
             self.state.last_round_triggered
             and self.state.current_player_index == self.state.last_player_index
@@ -149,31 +122,28 @@ class Game:
 
     # ── Actions ───────────────────────────────────────────────────────────────
 
-    def draw_train_card_from_deck(self, player):
+    def draw_train_card_from_deck(self, player: Player):
         return self.cards.draw_from_deck(player)
 
-    def draw_train_card_from_face_up(self, player, index):
+    def draw_train_card_from_face_up(self, player: Player, index: int):
         return self.cards.draw_from_face_up(player, index)
 
-    def available_colors_for_gray_route(self, player, route_length):
+    def available_colors_for_gray_route(self, player: Player, route_length: int) -> list[str]:
         return self.cards.available_colors_for_gray_route(player, route_length)
 
-    def claim_route(self, route, chosen_color=None) -> ValidationResult:
-        """Claim a route and advance the turn.
-
-        RouteService handles validation and state mutation.
-        Turn advancement lives here so next_player() (with its last-round
-        and end-game logic) always fires after a successful claim.
-        """
+    def claim_route(self, route, chosen_color: str | None = None) -> ValidationResult:
+        """Claim a route and advance the turn on success."""
         result = self.routes_service.claim_route(route, chosen_color)
         if result.ok:
             self.next_player()
         return result
 
-    def draw_destination_tickets(self, count=3):
+    def draw_destination_tickets(self, count: int = 3):
         return self.tickets.draw(count)
 
-    def keep_destination_tickets(self, player, chosen, drawn, advance_turn=True):
+    def keep_destination_tickets(
+        self, player: Player, chosen, drawn, advance_turn: bool = True
+    ):
         ok, reason = self.tickets.keep_tickets(player, chosen, drawn)
         if advance_turn:
             self.next_player()
@@ -182,26 +152,14 @@ class Game:
     # ── End game ──────────────────────────────────────────────────────────────
 
     def _standings_key(self, player: Player) -> tuple:
-        """Tiebreaker key used for final standings sorting."""
         return (player.score, player.completed_tickets, -player.trains, player.name.lower())
 
     def _end_game(self) -> None:
         self.state.game_over = True
         self.scoring.calculate_destination_scores()
-
-        route_lengths = {
-            p: self.scoring.longest_route_length(p) for p in self.state.players
-        }
-        max_len = max(route_lengths.values(), default=0)
-        for p, length in route_lengths.items():
-            if length == max_len:
-                p.score += 10
-
+        route_lengths = self.scoring.apply_longest_route_bonus()  # all scoring in one service
         self.state.final_standings = sorted(
-            self.state.players,
-            key=self._standings_key,
-            reverse=True,
+            self.state.players, key=self._standings_key, reverse=True
         )
-
         if self.on_game_end:
             self.on_game_end(route_lengths)

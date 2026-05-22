@@ -1,11 +1,10 @@
-# turn_manager.py
 from __future__ import annotations
 
 from game.services.game_state import GameState
 
 
 class TurnManager:
-    def __init__(self, state: GameState):
+    def __init__(self, state: GameState) -> None:
         self.state = state
 
     def current_player(self):
@@ -16,9 +15,8 @@ class TurnManager:
     def next_player(self) -> None:
         """Advance the turn index only.
 
-        Last-round detection and _end_game() are deliberately handled by
-        Game.next_player() so that scoring always runs before game_over is set.
-        This method must not set game_over itself.
+        Last-round detection and _end_game() are handled by Game.next_player()
+        so scoring always runs before game_over is set.
         """
         if not self.state.players:
             return

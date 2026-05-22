@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 @dataclass
 class ValidationResult:
     """Structured result returned by MoveValidator and Game.claim_route."""
-
     ok: bool
     reason: str = ""
     hint: str = ""
@@ -22,8 +21,10 @@ class MoveValidator:
     """
     Validates whether a player may claim a route.
 
-    Separating validation from Game keeps claim_route focused on
-    state mutation and makes each rule independently testable.
+    Card-sufficiency checks delegate entirely to ``route.compute_card_slots``
+    (which returns a ``CardPlan``).  Neither the ferry math nor the standard
+    math is re-implemented here; this class is responsible only for rule
+    checks (ownership, train count, colour selection) and failure messages.
     """
 
     def validate_claim(
@@ -34,13 +35,8 @@ class MoveValidator:
         all_routes: list["Route"],
         player_count: int,
     ) -> ValidationResult:
-        """
-        Check every precondition for claiming *route*.
+        """Check every precondition for claiming *route*."""
 
-        Returns ValidationResult with ok=True when the claim is legal.
-        On failure, *reason* is a short UI message and *hint* gives the
-        player specific details about what they are missing.
-        """
         if route.is_claimed():
             return ValidationResult(
                 ok=False,
@@ -76,17 +72,10 @@ class MoveValidator:
         if player.trains < route.length:
             return ValidationResult(
                 ok=False,
-                reason=(
-                    f"Not enough trains — need {route.length}, "
-                    f"have {player.trains}."
-                ),
+                reason=f"Not enough trains — need {route.length}, have {player.trains}.",
                 hint="Claim shorter routes to spend your remaining trains.",
             )
 
-        # BUG FIX: for gray routes use chosen_color; for coloured routes use
-        # route.color_name.  Previously route.color_name was always used, which
-        # returns None for gray routes and caused every gray-route claim to fail
-        # immediately with "No colour selected" regardless of the dialog choice.
         if route.is_gray():
             if not chosen_color:
                 return ValidationResult(
@@ -96,100 +85,71 @@ class MoveValidator:
                 )
             required_color = chosen_color.lower()
         else:
-            required_color = route.color_name  # always a non-None string here
+            required_color = route.color_name
 
+        return self._validate_cards(player, route, required_color)
+
+    # ── Card sufficiency ──────────────────────────────────────────────────────
+
+    def _validate_cards(
+        self,
+        player: "Player",
+        route: "Route",
+        required_color: str,
+    ) -> ValidationResult:
+        color_count = sum(1 for c in player.train_cards if c.color == required_color)
+        loco_count  = sum(1 for c in player.train_cards if c.is_locomotive())
+
+        if route.compute_card_slots(color_count, loco_count) is not None:
+            return ValidationResult(ok=True)
+
+        # Build a detailed failure message
+        color_name = required_color.title()
         if route.is_ferry():
-            return self._validate_ferry(player, route, required_color)
+            return self._ferry_failure(route, color_name, color_count, loco_count)
 
-        return self._validate_standard(player, route, required_color)
-
-    # ---------------------------------------------------------------- helpers
-
-    def _validate_standard(
-        self,
-        player: "Player",
-        route: "Route",
-        required_color: str,
-    ) -> ValidationResult:
-        """Validate a non-ferry route claim."""
-        matching = sum(
-            1 for c in player.train_cards if c.color == required_color
-        )
-        locos = sum(1 for c in player.train_cards if c.is_locomotive())
-        available = matching + locos
-
-        if available < route.length:
-            short = route.length - available
-            color_name = required_color.title()
-            return ValidationResult(
-                ok=False,
-                reason="Not enough cards to claim this route.",
-                hint=(
-                    f"Need {route.length} {color_name} card(s). "
-                    f"You have {matching} {color_name} "
-                    f"+ {locos} locomotive(s) = {available} total. "
-                    f"Short by {short} card(s)."
-                ),
-            )
-
-        return ValidationResult(ok=True)
-
-    def _validate_ferry(
-        self,
-        player: "Player",
-        route: "Route",
-        required_color: str,
-    ) -> ValidationResult:
-        """
-        Validate a ferry route claim.
-
-        Ferry rules:
-          - ferry_locos slots must each be covered by 1 locomotive card.
-          - If the player is short on locomotives, any 3 color cards substitute
-            for each missing locomotive (spending more cards in total).
-          - Remaining (length - ferry_locos) color slots use color cards,
-            with extra locomotives usable as wilds.
-        """
-        L = route.ferry_locos
-        color_slots = route.length - L
-
-        avail_locos = sum(1 for c in player.train_cards if c.is_locomotive())
-        avail_color = sum(
-            1 for c in player.train_cards if c.color == required_color
+        available = color_count + loco_count
+        return ValidationResult(
+            ok=False,
+            reason="Not enough cards to claim this route.",
+            hint=(
+                f"Need {route.length} {color_name} card(s). "
+                f"You have {color_count} {color_name} "
+                f"+ {loco_count} locomotive(s) = {available} total. "
+                f"Short by {route.length - available} card(s)."
+            ),
         )
 
-        # Locos committed to ferry slots (1:1 — most efficient use).
-        locos_for_ferry = min(avail_locos, L)
-        locos_remaining = avail_locos - locos_for_ferry
-        ferry_shortage = L - locos_for_ferry  # each missing loco costs 3 cards
-
-        # Spare locos cover color slots as wilds.
+    @staticmethod
+    def _ferry_failure(
+        route: "Route",
+        color_name: str,
+        color_count: int,
+        loco_count: int,
+    ) -> ValidationResult:
+        """Build a descriptive failure result for an unaffordable ferry route."""
+        L               = route.ferry_locos
+        locos_for_ferry = min(loco_count, L)
+        ferry_shortage  = L - locos_for_ferry
+        locos_remaining = loco_count - locos_for_ferry
+        color_slots     = route.length - L
         locos_for_color = min(locos_remaining, color_slots)
-        color_slots_uncovered = color_slots - locos_for_color
+        color_needed    = (color_slots - locos_for_color) + ferry_shortage * 3
 
-        # Total color cards required.
-        color_needed = color_slots_uncovered + ferry_shortage * 3
-
-        if avail_color < color_needed:
-            color_name = required_color.title()
-            parts = [
-                f"Ferry route — needs {L} locomotive(s) for the water crossing."
-            ]
-            if ferry_shortage > 0:
-                parts.append(
-                    f"You are short {ferry_shortage} locomotive(s); "
-                    f"each can be replaced by 3 {color_name} cards "
-                    f"({ferry_shortage * 3} extra card(s) total)."
-                )
+        parts = [f"Ferry route — needs {L} locomotive(s) for the water crossing."]
+        if ferry_shortage > 0:
             parts.append(
-                f"Total {color_name} cards required: {color_needed}. "
-                f"You have {avail_color}. "
-                f"Short by {color_needed - avail_color} card(s)."
+                f"You are short {ferry_shortage} locomotive(s); "
+                f"each can be replaced by 3 {color_name} cards "
+                f"({ferry_shortage * 3} extra card(s) total)."
             )
-            return ValidationResult(
-                ok=False,
-                reason="Not enough cards for this ferry route.",
-                hint=" ".join(parts),
-            )
-
-        return ValidationResult(ok=True)
+        parts.append(
+            f"Total {color_name} cards required: {color_needed}. "
+            f"You have {color_count}. "
+            f"Short by {color_needed - color_count} card(s)."
+        )
+        return ValidationResult(
+            ok=False,
+            reason="Not enough cards for this ferry route.",
+            hint=" ".join(parts),
+        )

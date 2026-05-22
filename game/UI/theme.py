@@ -1,46 +1,45 @@
-"""theme.py — shared UI palette and font constants.
+"""theme.py — shared UI palette and font constants (One Dark base #282C34)."""
 
-Based on the One Dark palette (#282C34 base) — dark but easy on the eyes.
-"""
-
-# ── Backgrounds ──────────────────────────────────────────────────────────────
-BG_MAIN    = "#282C34"   # One Dark base — main window fill
-BG_DARK    = "#21252B"   # slightly deeper — bottom bar, board frame
+# ── Backgrounds ───────────────────────────────────────────────────────────────
+BG_MAIN    = "#282C34"   # main window fill
+BG_DARK    = "#21252B"   # bottom bar, board frame
 BG_PANEL   = "#2C313A"   # sidebar / panel surfaces
 BG_SURFACE = "#333842"   # listbox / card inset surfaces
 BG_ENTRY   = "#1E2227"   # entry field background
 
-# ── Accent colours ───────────────────────────────────────────────────────────
-ACCENT_RED  = "#E06C75"   # One Dark red — primary action
-ACCENT_GOLD = "#E5C07B"   # One Dark yellow — headers / highlights
-GOLD_DIM    = "#4B5263"   # muted border / divider color
+# ── Accent colours ────────────────────────────────────────────────────────────
+ACCENT_RED  = "#E06C75"
+ACCENT_GOLD = "#E5C07B"
+GOLD_DIM    = "#4B5263"  # muted border / divider
 
-# ── Foreground ───────────────────────────────────────────────────────────────
-FG_PRIMARY = "#ABB2BF"   # One Dark foreground — main text
-FG_MUTED   = "#7A8394"   # secondary / label text
-FG_HINT    = "#5C6370"   # hint / detail text
+# ── Foreground ────────────────────────────────────────────────────────────────
+FG_PRIMARY = "#ABB2BF"
+FG_MUTED   = "#7A8394"
+FG_HINT    = "#5C6370"
 
-# ── Button states ────────────────────────────────────────────────────────────
-BTN_OFF   = "#3E4451"    # secondary / inactive button background
-BTN_HOVER = "#BE5046"    # primary button hover (darker red)
+# ── Button states ─────────────────────────────────────────────────────────────
+BTN_OFF   = "#3E4451"
+BTN_HOVER = "#BE5046"
 
-# ── Fonts (Segoe UI — clean sans-serif) ──────────────────────────────────────
+# ── Fonts ─────────────────────────────────────────────────────────────────────
 _SANS = "Segoe UI"
 
 FONT_HERO   = (_SANS, 24, "bold")
 FONT_CITY   = (_SANS, 11)
-FONT_LABEL  = (_SANS, 9,  "bold")
+FONT_LABEL  = (_SANS,  9, "bold")
 FONT_ENTRY  = (_SANS, 10)
 FONT_BTN    = (_SANS, 10, "bold")
 FONT_BODY   = (_SANS, 10)
 FONT_TITLE  = (_SANS, 10, "bold")
 FONT_PLAYER = (_SANS, 12, "bold")
-FONT_STATS  = (_SANS, 9)
-FONT_SMALL  = (_SANS, 9)
+FONT_STATS  = (_SANS,  9)
+FONT_SMALL  = (_SANS,  9)
 FONT_BUTTON = (_SANS, 10, "bold")
-FONT_HINT   = (_SANS, 8)
+FONT_HINT   = (_SANS,  8)
 
-# ── Player token colours (plain-name → hex) ───────────────────────────────────
+# ── Player colours used in the sidebar / badges ───────────────────────────────
+# Lighter One Dark palette tones — intentionally different from the darker
+# map piece colours in map_view._TRAIN_PIECE_HEX.
 _PLAYER_COLORS: dict[str, str] = {
     "red":    "#E06C75",
     "yellow": "#E5C07B",
@@ -49,7 +48,7 @@ _PLAYER_COLORS: dict[str, str] = {
     "blue":   "#61AFEF",
 }
 
-# ── Setup-screen slot definitions (colour_name, hex, display_label) ──────────
+# ── Setup-screen slot definitions (colour_name, hex, display_label) ───────────
 PLAYER_SLOTS: list[tuple[str, str, str]] = [
     ("red",    "#E06C75", "RED"),
     ("yellow", "#E5C07B", "YELLOW"),

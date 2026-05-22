@@ -1,4 +1,3 @@
-# route_service.py
 from __future__ import annotations
 
 from game.classes.route import Route
@@ -10,29 +9,28 @@ _LAST_ROUND_THRESHOLD = 2
 
 
 class RouteService:
-    def __init__(self, state: GameState, card_service, turn_manager):
-        self.state = state
+    def __init__(self, state: GameState, card_service, turn_manager) -> None:
+        self.state        = state
         self.card_service = card_service
         self.turn_manager = turn_manager
-        self.validator = MoveValidator()
+        self.validator    = MoveValidator()
 
-    def claim_route(self, route: Route, chosen_color: str | None = None) -> ValidationResult:
-        """Validate and apply a route claim for the current player.
+    def claim_route(
+        self, route: Route, chosen_color: str | None = None
+    ) -> ValidationResult:
+        """
+        Validate and apply a route claim for the current player.
 
-        Turn advancement is intentionally NOT done here — it is the
-        responsibility of Game.claim_route() so that last-round detection
-        and _end_game() always execute in the correct order.
+        Turn advancement is NOT done here — Game.claim_route() owns that so
+        last-round detection always fires in the correct order.
         """
         player = self.turn_manager.current_player()
         if player is None:
             return ValidationResult(ok=False, reason="No current player.")
 
         result = self.validator.validate_claim(
-            player,
-            route,
-            chosen_color,
-            self.state.board.routes,
-            len(self.state.players),
+            player, route, chosen_color,
+            self.state.board.routes, len(self.state.players),
         )
         if not result.ok:
             return result
@@ -48,21 +46,22 @@ class RouteService:
         self.card_service.remove_cards_from_hand(player, cards)
         self.state.train_deck.discard(cards)
 
-        route.owner_player = player
-        player.trains -= route.length
-        player.score += _ROUTE_POINTS.get(route.length, route.length)
+        route.owner_player  = player
+        player.trains      -= route.length
+        player.score       += _ROUTE_POINTS.get(route.length, route.length)
 
         if player.trains <= _LAST_ROUND_THRESHOLD and not self.state.last_round_triggered:
             self.state.last_round_triggered = True
-            self.state.last_player_index = self.state.current_player_index
+            self.state.last_player_index    = self.state.current_player_index
 
-        route_desc = f"{route.city_a} \u2014 {route.city_b}"
-        if route.is_gray() and chosen_color:
-            message = f"{player.name} claimed {route_desc} using {chosen_color.title()} cards."
-        else:
-            message = f"{player.name} claimed {route_desc}."
+        return ValidationResult(ok=True, reason=self._claim_message(route, player, chosen_color))
 
-        if route.is_ferry():
-            message += " (Ferry)"
-
-        return ValidationResult(ok=True, reason=message)
+    @staticmethod
+    def _claim_message(route: Route, player, chosen_color: str | None) -> str:
+        desc = f"{route.city_a} \u2014 {route.city_b}"
+        msg  = (
+            f"{player.name} claimed {desc} using {chosen_color.title()} cards."
+            if route.is_gray() and chosen_color
+            else f"{player.name} claimed {desc}."
+        )
+        return msg + " (Ferry)" if route.is_ferry() else msg

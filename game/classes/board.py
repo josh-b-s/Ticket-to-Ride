@@ -3,34 +3,24 @@ from game.classes.route import Route, RouteColor
 
 
 class Board:
-    def __init__(self, path: str = "board.json"):
+    def __init__(self, path: str = "board.json") -> None:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         self.cities: dict[str, tuple[int, int]] = {
-            name: tuple(coords)
-            for name, coords in data["cities"].items()
+            name: tuple(coords) for name, coords in data["cities"].items()
         }
-
-        self.routes: list[Route] = [
-            self._parse_route(r) for r in data["routes"]
-        ]
+        self.routes: list[Route] = [self._parse_route(r) for r in data["routes"]]
 
     @staticmethod
     def _parse_route(r: dict) -> Route:
-        """Parse a single route dict from board.json into a Route object."""
         color_name = r.get("color", "GRAY").upper()
         try:
             color = RouteColor[color_name]
         except KeyError:
-            raise ValueError(
-                f"Unknown route color {color_name!r} in board data."
-            )
+            raise ValueError(f"Unknown route color {color_name!r} in board data.")
         return Route(
-            r["a"],
-            r["b"],
-            r["length"],
-            color,
+            r["a"], r["b"], r["length"], color,
             ferry_locos=r.get("ferry_locos", 0),
         )
 

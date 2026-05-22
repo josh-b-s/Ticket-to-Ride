@@ -1,6 +1,4 @@
-"""game_screen.py
-Main game screen: layout + turn management.
-"""
+"""game_screen.py — main game screen: layout + turn management."""
 from __future__ import annotations
 
 import tkinter as tk
@@ -27,22 +25,19 @@ def _card_hex(color: str | None) -> str:
 
 def _text_for_bg(hex_color: str) -> str:
     h = hex_color.lstrip("#")
-    r = int(h[0:2], 16)
-    g = int(h[2:4], 16)
-    b = int(h[4:6], 16)
-    luminance = (0.299 * r + 0.587 * g + 0.114 * b)
+    luminance = 0.299 * int(h[0:2], 16) + 0.587 * int(h[2:4], 16) + 0.114 * int(h[4:6], 16)
     return "#000000" if luminance > 160 else "#ffffff"
 
 
 class GameScreen:
-    def __init__(self, root: tk.Tk, game):
+    def __init__(self, root: tk.Tk, game) -> None:
         self.root = root
         self.game = game
 
         self.root.configure(bg=BG_MAIN)
         self.root.title("Ticket to Ride: London")
 
-        self._action_mode: str = "main"
+        self._action_mode: str     = "main"
         self._draws_remaining: int = 0
         self._cards_drawn_this_turn: int = 0
         self._pending_tickets: list = []
@@ -89,26 +84,18 @@ class GameScreen:
         self._section_header("Players")
 
         canvas_height = len(self.game.get_players()) * 38 + 8
-
         self.player_canvas = tk.Canvas(
-            self.side_frame,
-            bg=BG_SURFACE,
-            highlightthickness=1,
-            highlightbackground=GOLD_DIM,
+            self.side_frame, bg=BG_SURFACE,
+            highlightthickness=1, highlightbackground=GOLD_DIM,
             height=canvas_height,
         )
         self.player_canvas.pack(fill="x")
 
         self.player_rows_frame = tk.Frame(self.player_canvas, bg=BG_SURFACE)
-
         self.player_canvas.create_window(
-            (0, 0),
-            window=self.player_rows_frame,
-            anchor="nw",
-            width=260,
+            (0, 0), window=self.player_rows_frame, anchor="nw", width=260,
         )
 
-        self._divider()
         self._section_header("Turn Info")
 
         self.info_label = tk.Label(
@@ -140,20 +127,13 @@ class GameScreen:
         self.player_badge.pack(side="left")
 
         self.bottom_player_dot = tk.Label(
-            self.player_badge,
-            text="⬤",
-            bg=BG_DARK,
-            fg=ACCENT_GOLD,
+            self.player_badge, text="◆", bg=BG_DARK, fg=ACCENT_GOLD,
             font=("Segoe UI Symbol", 11),
         )
         self.bottom_player_dot.pack(side="left", padx=(0, 8))
 
         self.bottom_player_name = tk.Label(
-            self.player_badge,
-            text="",
-            fg=ACCENT_GOLD,
-            bg=BG_DARK,
-            font=FONT_PLAYER,
+            self.player_badge, text="", fg=ACCENT_GOLD, bg=BG_DARK, font=FONT_PLAYER,
         )
         self.bottom_player_name.pack(side="left")
 
@@ -194,9 +174,9 @@ class GameScreen:
 
     def _styled_button(self, parent, primary: bool = True, **kwargs) -> tk.Button:
         bg_normal = ACCENT_RED if primary else BTN_OFF
-        bg_hover = BTN_HOVER if primary else "#c8c8c8"
-        fg_normal = "#ffffff" if primary else FG_MUTED
-        fg_active = "#ffffff" if primary else FG_PRIMARY
+        bg_hover  = BTN_HOVER  if primary else "#c8c8c8"
+        fg_normal = "#ffffff"  if primary else FG_MUTED
+        fg_active = "#ffffff"  if primary else FG_PRIMARY
 
         btn = tk.Button(
             parent, bg=bg_normal, fg=fg_normal, font=FONT_BUTTON,
@@ -204,34 +184,23 @@ class GameScreen:
             activeforeground=fg_active, cursor="hand2",
             highlightthickness=0, disabledforeground="#aaaaaa", **kwargs,
         )
-        btn.bind("<Enter>", lambda e: btn.config(bg=bg_hover) if btn["state"] == "normal" else None)
+        btn.bind("<Enter>", lambda e: btn.config(bg=bg_hover)  if btn["state"] == "normal" else None)
         btn.bind("<Leave>", lambda e: btn.config(bg=bg_normal) if btn["state"] == "normal" else None)
         return btn
 
     def _card_button(self, parent, text: str, card_color: str | None, **kwargs) -> tk.Button:
-        bg_normal = _card_hex(card_color)
-        fg_normal = _text_for_bg(bg_normal)
-
-        btn = tk.Button(
-            parent,
-            text=text,
-            bg=bg_normal,
-            fg=fg_normal,
-            activebackground=bg_normal,
-            activeforeground=fg_normal,
-            font=FONT_BUTTON,
-            relief="flat",
-            bd=0,
-            cursor="hand2",
-            highlightthickness=0,
-            disabledforeground="#aaaaaa",
-            **kwargs,
+        bg = _card_hex(card_color)
+        return tk.Button(
+            parent, text=text, bg=bg, fg=_text_for_bg(bg),
+            activebackground=bg, activeforeground=_text_for_bg(bg),
+            font=FONT_BUTTON, relief="flat", bd=0,
+            cursor="hand2", highlightthickness=0,
+            disabledforeground="#aaaaaa", **kwargs,
         )
-        return btn
 
     def _set_hint(self, text: str) -> None:
         if text:
-            self.hint_label.config(text=f"║  {text}")
+            self.hint_label.config(text=f"ℹ  {text}")
             self.hint_label.pack(fill="x", pady=(0, 6))
         else:
             self.hint_label.config(text="")
@@ -245,43 +214,18 @@ class GameScreen:
 
         for p in self.game.get_players():
             player_color = _PLAYER_COLORS.get(p.color or "", FG_PRIMARY)
-            is_current = p == self.game.current_player()
-            row_bg = "#3A404B" if is_current else BG_SURFACE
+            is_current   = p is self.game.current_player()
+            row_bg       = "#3A404B" if is_current else BG_SURFACE
 
-            row = tk.Frame(
-                self.player_rows_frame,
-                bg=row_bg,
-                padx=8,
-                pady=6,
-            )
+            row = tk.Frame(self.player_rows_frame, bg=row_bg, padx=8, pady=6)
             row.pack(fill="x", pady=2)
 
-            tk.Label(
-                row,
-                text="⬤",
-                bg=row_bg,
-                fg=player_color,
-                font=("Segoe UI Symbol", 11),
-            ).pack(side="left", padx=(0, 10))
-
-            tk.Label(
-                row,
-                text=p.name,
-                bg=row_bg,
-                fg=player_color,
-                font=FONT_BODY,
-                anchor="w",
-            ).pack(side="left")
-
-            stats = f"{p.score} pts • {p.trains} trains"
-
-            tk.Label(
-                row,
-                text=stats,
-                bg=row_bg,
-                fg=FG_MUTED,
-                font=FONT_HINT,
-            ).pack(side="right")
+            tk.Label(row, text="◆", bg=row_bg, fg=player_color,
+                     font=("Segoe UI Symbol", 11)).pack(side="left", padx=(0, 10))
+            tk.Label(row, text=p.name, bg=row_bg, fg=player_color,
+                     font=FONT_BODY, anchor="w").pack(side="left")
+            tk.Label(row, text=f"{p.score} pts · {p.trains} trains",
+                     bg=row_bg, fg=FG_MUTED, font=FONT_HINT).pack(side="right")
 
         self.info_label.config(text=message)
         self._set_hint(hint)
@@ -300,7 +244,7 @@ class GameScreen:
             self._render_draw_actions()
 
     def _render_main_actions(self) -> None:
-        if getattr(self.game, "game_over", False):
+        if self.game.state.game_over:
             tk.Label(
                 self.action_frame, text="Game finished.",
                 bg=BG_PANEL, fg=FG_MUTED, font=FONT_BODY,
@@ -344,17 +288,17 @@ class GameScreen:
             bg=BG_PANEL, fg=FG_MUTED, font=FONT_BODY,
         ).pack(anchor="w", pady=(10, 4))
 
-        face_up = self.game.get_face_up_cards()
-        for i, card in enumerate(face_up):
-            can_pick = card is not None and not (card.is_locomotive() and self._draws_remaining < 2)
-            btn = self._card_button(
+        for i, card in enumerate(self.game.get_face_up_cards()):
+            can_pick = card is not None and not (
+                card.is_locomotive() and self._draws_remaining < 2
+            )
+            self._card_button(
                 self.action_frame,
                 text="Empty" if card is None else str(card),
                 card_color=None if card is None else getattr(card, "color", None),
                 state="normal" if can_pick else "disabled",
                 command=lambda idx=i: self._draw_from_face_up(idx),
-            )
-            btn.pack(fill="x", pady=2, ipady=3)
+            ).pack(fill="x", pady=2, ipady=3)
 
     # ── Bottom bar ────────────────────────────────────────────────────────────
 
@@ -364,9 +308,7 @@ class GameScreen:
             return
 
         player_hex = _PLAYER_COLORS.get(player.color or "", ACCENT_GOLD)
-
         self.bottom_player_dot.config(fg=player_hex)
-
         self.bottom_player_name.config(text=player.name, fg=player_hex)
         self.bottom_stats_label.config(
             text=(
@@ -394,7 +336,7 @@ class GameScreen:
 
     @staticmethod
     def _build_card_summary(cards: list) -> list[tuple[str, int]]:
-        order = TrainCard.COLORS + ["locomotive"]
+        order  = TrainCard.COLORS + ["locomotive"]
         counts = {color: 0 for color in order}
         for card in cards:
             if card.color in counts:
@@ -404,7 +346,7 @@ class GameScreen:
     # ── Draw actions ──────────────────────────────────────────────────────────
 
     def _start_draw_action(self) -> None:
-        if getattr(self.game, "game_over", False):
+        if self.game.state.game_over:
             return
         self._action_mode = "draw"
         self._draws_remaining = 2
@@ -414,8 +356,7 @@ class GameScreen:
     def _draw_from_deck(self) -> None:
         if self._action_mode != "draw":
             return
-        player = self.game.current_player()
-        card = self.game.draw_train_card_from_deck(player)
+        card = self.game.draw_train_card_from_deck(self.game.current_player())
         if card is None:
             messagebox.showinfo("Deck", "No cards available.")
             return
@@ -426,13 +367,10 @@ class GameScreen:
             return
 
         face_up = self.game.get_face_up_cards()
-        if not (0 <= index < len(face_up)):
+        if not (0 <= index < len(face_up)) or face_up[index] is None:
             return
 
         card = face_up[index]
-        if card is None:
-            return
-
         if card.is_locomotive() and self._draws_remaining < 2:
             messagebox.showinfo(
                 "Rule Reminder",
@@ -446,9 +384,8 @@ class GameScreen:
 
         if drawn.is_locomotive():
             self._finish_draw_action(f"Drew {drawn}. Turn ends.")
-            return
-
-        self._register_draw(str(drawn))
+        else:
+            self._register_draw(str(drawn))
 
     def _register_draw(self, card_label: str) -> None:
         self._cards_drawn_this_turn += 1
@@ -476,7 +413,7 @@ class GameScreen:
     # ── Ticket actions ────────────────────────────────────────────────────────
 
     def _start_ticket_draw(self) -> None:
-        if getattr(self.game, "game_over", False) or self._action_mode != "main":
+        if self.game.state.game_over or self._action_mode != "main":
             return
 
         tickets = self.game.draw_destination_tickets()
@@ -489,7 +426,7 @@ class GameScreen:
         chosen = ask_ticket_choice(self.root, player.name, tickets, min_keep=1)
 
         if not chosen:
-            self.game.destination_deck = tickets + self.game.destination_deck
+            self.game.state.destination_deck = tickets + self.game.state.destination_deck
             self._pending_tickets = []
             return
 
@@ -511,7 +448,7 @@ class GameScreen:
     # ── Route click ───────────────────────────────────────────────────────────
 
     def _on_route_click(self, route) -> None:
-        if getattr(self.game, "game_over", False):
+        if self.game.state.game_over:
             return
         if self._action_mode != "main":
             messagebox.showinfo("Turn", "Finish your current action first.")
@@ -522,8 +459,8 @@ class GameScreen:
         chosen_color = None
         if route.is_gray():
             player = self.game.current_player()
-            playable_colors = self.game.available_colors_for_gray_route(player, route.length)
-            chosen_color = ask_gray_route_color(self.root, player.name, playable_colors)
+            playable = self.game.available_colors_for_gray_route(player, route.length)
+            chosen_color = ask_gray_route_color(self.root, player.name, playable)
             if not chosen_color:
                 return
 
@@ -542,24 +479,23 @@ class GameScreen:
     def _on_game_end(self, route_lengths: dict) -> None:
         lines = ["Game Over!\n"]
 
-        sorted_players = (
-            self.game.final_standings
-            if getattr(self.game, "final_standings", None)
-            else sorted(self.game.get_players(), key=lambda p: p.score, reverse=True)
+        standings = (
+            self.game.state.final_standings
+            or sorted(self.game.get_players(), key=lambda p: p.score, reverse=True)
         )
 
-        for p in sorted_players:
+        for p in standings:
             lines.append(
                 f"{p.name}: {p.score} pts  "
                 f"(tickets: {getattr(p, 'completed_tickets', 0)}, "
                 f"longest: {route_lengths.get(p, 0)})"
             )
 
-        if not sorted_players:
+        if not standings:
             lines.append("\nNo winner.")
         else:
-            top = sorted_players[0]
-            ties = [p for p in sorted_players if self.game._standings_key(p) == self.game._standings_key(top)]
+            top  = standings[0]
+            ties = [p for p in standings if self.game._standings_key(p) == self.game._standings_key(top)]
             if len(ties) == 1:
                 lines.append(f"\nWinner: {top.name}!")
             else:
