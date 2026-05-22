@@ -8,7 +8,7 @@ class Player:
         self.trains: int = 45
         self.train_cards: list = []
         self.destination_tickets: list = []
-        self.color: str | None = None          # plain string key into theme._PLAYER_COLORS
+        self.color: str | None = None  # plain string key into theme._PLAYER_COLORS
         self.completed_tickets: int = 0
 
     def __str__(self) -> str:

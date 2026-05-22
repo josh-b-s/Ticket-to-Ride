@@ -28,12 +28,12 @@ class MoveValidator:
     """
 
     def validate_claim(
-        self,
-        player: "Player",
-        route: "Route",
-        chosen_color: Optional[str],
-        all_routes: list["Route"],
-        player_count: int,
+            self,
+            player: "Player",
+            route: "Route",
+            chosen_color: Optional[str],
+            all_routes: list["Route"],
+            player_count: int,
     ) -> ValidationResult:
         """Check every precondition for claiming *route*."""
 
@@ -60,8 +60,8 @@ class MoveValidator:
             )
 
         if any(
-            r is not route and r.is_claimed() and r.owner_player is player
-            for r in same_routes
+                r is not route and r.is_claimed() and r.owner_player is player
+                for r in same_routes
         ):
             return ValidationResult(
                 ok=False,
@@ -89,16 +89,16 @@ class MoveValidator:
 
         return self._validate_cards(player, route, required_color)
 
-    # ── Card sufficiency ──────────────────────────────────────────────────────
+    #  Card sufficiency 
 
     def _validate_cards(
-        self,
-        player: "Player",
-        route: "Route",
-        required_color: str,
+            self,
+            player: "Player",
+            route: "Route",
+            required_color: str,
     ) -> ValidationResult:
         color_count = sum(1 for c in player.train_cards if c.color == required_color)
-        loco_count  = sum(1 for c in player.train_cards if c.is_locomotive())
+        loco_count = sum(1 for c in player.train_cards if c.is_locomotive())
 
         if route.compute_card_slots(color_count, loco_count) is not None:
             return ValidationResult(ok=True)
@@ -122,19 +122,19 @@ class MoveValidator:
 
     @staticmethod
     def _ferry_failure(
-        route: "Route",
-        color_name: str,
-        color_count: int,
-        loco_count: int,
+            route: "Route",
+            color_name: str,
+            color_count: int,
+            loco_count: int,
     ) -> ValidationResult:
         """Build a descriptive failure result for an unaffordable ferry route."""
-        L               = route.ferry_locos
+        L = route.ferry_locos
         locos_for_ferry = min(loco_count, L)
-        ferry_shortage  = L - locos_for_ferry
+        ferry_shortage = L - locos_for_ferry
         locos_remaining = loco_count - locos_for_ferry
-        color_slots     = route.length - L
+        color_slots = route.length - L
         locos_for_color = min(locos_remaining, color_slots)
-        color_needed    = (color_slots - locos_for_color) + ferry_shortage * 3
+        color_needed = (color_slots - locos_for_color) + ferry_shortage * 3
 
         parts = [f"Ferry route — needs {L} locomotive(s) for the water crossing."]
         if ferry_shortage > 0:

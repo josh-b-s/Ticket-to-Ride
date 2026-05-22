@@ -10,13 +10,13 @@ _LAST_ROUND_THRESHOLD = 2
 
 class RouteService:
     def __init__(self, state: GameState, card_service, turn_manager) -> None:
-        self.state        = state
+        self.state = state
         self.card_service = card_service
         self.turn_manager = turn_manager
-        self.validator    = MoveValidator()
+        self.validator = MoveValidator()
 
     def claim_route(
-        self, route: Route, chosen_color: str | None = None
+            self, route: Route, chosen_color: str | None = None
     ) -> ValidationResult:
         """
         Validate and apply a route claim for the current player.
@@ -46,20 +46,20 @@ class RouteService:
         self.card_service.remove_cards_from_hand(player, cards)
         self.state.train_deck.discard(cards)
 
-        route.owner_player  = player
-        player.trains      -= route.length
-        player.score       += _ROUTE_POINTS.get(route.length, route.length)
+        route.owner_player = player
+        player.trains -= route.length
+        player.score += _ROUTE_POINTS.get(route.length, route.length)
 
         if player.trains <= _LAST_ROUND_THRESHOLD and not self.state.last_round_triggered:
             self.state.last_round_triggered = True
-            self.state.last_player_index    = self.state.current_player_index
+            self.state.last_player_index = self.state.current_player_index
 
         return ValidationResult(ok=True, reason=self._claim_message(route, player, chosen_color))
 
     @staticmethod
     def _claim_message(route: Route, player, chosen_color: str | None) -> str:
         desc = f"{route.city_a} \u2014 {route.city_b}"
-        msg  = (
+        msg = (
             f"{player.name} claimed {desc} using {chosen_color.title()} cards."
             if route.is_gray() and chosen_color
             else f"{player.name} claimed {desc}."

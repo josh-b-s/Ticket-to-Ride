@@ -2,22 +2,22 @@ import random
 
 from game.classes.train_card import TrainCard
 
-_FACE_UP_SIZE         = 5
+_FACE_UP_SIZE = 5
 _MAX_LOCO_FIX_ATTEMPTS = 10
 
 
 class TrainDeck:
     def __init__(self) -> None:
         self.draw_pile: list[TrainCard] = (
-            [TrainCard(c) for c in TrainCard.COLORS for _ in range(12)]
-            + [TrainCard("locomotive") for _ in range(14)]
+                [TrainCard(c) for c in TrainCard.COLORS for _ in range(12)]
+                + [TrainCard("locomotive") for _ in range(14)]
         )
         self.discard_pile: list[TrainCard] = []
         self.face_up: list[TrainCard | None] = []
         random.shuffle(self.draw_pile)
         self._deal_face_up()
 
-    # ── Public ────────────────────────────────────────────────────────────────
+    #  Public 
 
     def get_face_up(self) -> list[TrainCard | None]:
         return self.face_up
@@ -30,7 +30,7 @@ class TrainDeck:
     def draw_face_up(self, index: int) -> TrainCard | None:
         if not (0 <= index < len(self.face_up)) or self.face_up[index] is None:
             return None
-        card               = self.face_up[index]
+        card = self.face_up[index]
         self.face_up[index] = self.draw()
         self._fix_locomotives()
         return card
@@ -38,7 +38,7 @@ class TrainDeck:
     def discard(self, cards: list[TrainCard | None]) -> None:
         self.discard_pile.extend(c for c in cards if c is not None)
 
-    # ── Private ───────────────────────────────────────────────────────────────
+    #  Private 
 
     def _deal_face_up(self) -> None:
         self.face_up = [self.draw() for _ in range(_FACE_UP_SIZE)]
@@ -46,7 +46,7 @@ class TrainDeck:
 
     def _reshuffle(self) -> None:
         if self.discard_pile:
-            self.draw_pile   = self.discard_pile[:]
+            self.draw_pile = self.discard_pile[:]
             self.discard_pile = []
             random.shuffle(self.draw_pile)
 

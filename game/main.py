@@ -1,7 +1,7 @@
 import tkinter as tk
 
-from game.classes.game import Game
 from game.UI.setup_screen import SetupScreen
+from game.classes.game import Game
 
 
 def main() -> None:

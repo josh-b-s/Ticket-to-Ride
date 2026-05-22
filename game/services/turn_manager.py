@@ -21,5 +21,5 @@ class TurnManager:
         if not self.state.players:
             return
         self.state.current_player_index = (
-            self.state.current_player_index + 1
-        ) % len(self.state.players)
+                                                  self.state.current_player_index + 1
+                                          ) % len(self.state.players)

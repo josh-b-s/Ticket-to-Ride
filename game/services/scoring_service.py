@@ -40,7 +40,7 @@ class ScoringService:
     def is_connected(self, player: Player, start: str, end: str) -> bool:
         return self._is_connected(player, start, end)
 
-    # ── Private helpers ───────────────────────────────────────────────────────
+    #  Private helpers 
 
     def _is_connected(self, player: Player, start: str, end: str) -> bool:
         return self._dfs(player, start, end, visited=set())

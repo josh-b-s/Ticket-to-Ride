@@ -1,4 +1,6 @@
 import json
+from typing import Any
+
 from game.classes.route import Route, RouteColor
 
 
@@ -7,7 +9,7 @@ class Board:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.cities: dict[str, tuple[int, int]] = {
+        self.cities: dict[str, tuple[Any]] = {
             name: tuple(coords) for name, coords in data["cities"].items()
         }
         self.routes: list[Route] = [self._parse_route(r) for r in data["routes"]]

@@ -9,7 +9,7 @@ class CardService:
     def __init__(self, state: GameState) -> None:
         self.state = state
 
-    # ── Draw actions ──────────────────────────────────────────────────────────
+    #  Draw actions 
 
     def draw_from_deck(self, player: Player):
         card = self.state.train_deck.draw()
@@ -23,10 +23,10 @@ class CardService:
             player.train_cards.append(card)
         return card
 
-    # ── Route card helpers ────────────────────────────────────────────────────
+    #  Route card helpers 
 
     def available_colors_for_gray_route(
-        self, player: Player, route_length: int
+            self, player: Player, route_length: int
     ) -> list[str]:
         """Return colour names the player can legally spend on a gray route."""
         locos = sum(1 for c in player.train_cards if c.is_locomotive())
@@ -37,10 +37,10 @@ class CardService:
         ]
 
     def select_cards_for_route(
-        self,
-        player: Player,
-        route: Route,
-        chosen_color: str | None = None,
+            self,
+            player: Player,
+            route: Route,
+            chosen_color: str | None = None,
     ) -> list | None:
         """
         Return the exact card objects to spend, or None if insufficient.
@@ -53,7 +53,7 @@ class CardService:
             return None
 
         color_cards = [c for c in player.train_cards if c.color == required_color]
-        loco_cards  = [c for c in player.train_cards if c.is_locomotive()]
+        loco_cards = [c for c in player.train_cards if c.is_locomotive()]
 
         plan = route.compute_card_slots(len(color_cards), len(loco_cards))
         if plan is None:

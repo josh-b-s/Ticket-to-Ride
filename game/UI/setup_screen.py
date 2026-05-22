@@ -11,8 +11,8 @@ from game.UI.theme import (
 
 class SetupScreen:
     def __init__(self, root: tk.Tk, game) -> None:
-        self.root  = root
-        self.game  = game
+        self.root = root
+        self.game = game
         self.root.configure(bg=BG)
 
         self.frame = tk.Frame(self.root, bg=BG)
@@ -20,7 +20,7 @@ class SetupScreen:
 
         self._build_ui()
 
-    # ── Build ─────────────────────────────────────────────────────────────────
+    #  Build 
 
     def _build_ui(self) -> None:
         centre = tk.Frame(self.frame, bg=BG)
@@ -54,7 +54,7 @@ class SetupScreen:
                 highlightthickness=1, highlightcolor=ACCENT_GOLD, highlightbackground=GOLD_DIM,
             )
             entry.pack(side="left", ipady=3)
-            entry.bind("<FocusIn>",  lambda e, r=row, l=label_widget: (r.config(bg=focus_bg), l.config(bg=focus_bg)))
+            entry.bind("<FocusIn>", lambda e, r=row, l=label_widget: (r.config(bg=focus_bg), l.config(bg=focus_bg)))
             entry.bind("<FocusOut>", lambda e, r=row, l=label_widget: (r.config(bg=BG_PANEL), l.config(bg=BG_PANEL)))
 
             self.entries.append((color_name, entry))
@@ -86,7 +86,7 @@ class SetupScreen:
         clear.bind("<Enter>", lambda e: clear.config(fg=FG_PRIMARY))
         clear.bind("<Leave>", lambda e: clear.config(fg=FG_MUTED))
 
-    # ── Event handlers ────────────────────────────────────────────────────────
+    #  Event handlers 
 
     def _clear_inputs(self) -> None:
         for _, entry in self.entries:

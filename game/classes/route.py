@@ -6,13 +6,13 @@ from typing import Optional
 
 
 class RouteColor(Enum):
-    BLUE   = "#1E82C8"
-    GREEN  = "#32A532"
-    BLACK  = "#323232"
+    BLUE = "#1E82C8"
+    GREEN = "#32A532"
+    BLACK = "#323232"
     YELLOW = "#FAEA00"
     ORANGE = "#F08C00"
-    PINK   = "#E35C98"
-    GRAY   = "#B0B0B3"
+    PINK = "#E35C98"
+    GRAY = "#B0B0B3"
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class CardPlan:
     ``MoveValidator`` (pass/fail) and ``CardService`` (card selection)
     so the ferry arithmetic lives in exactly one place.
     """
-    color_to_use:    int
+    color_to_use: int
     locos_for_ferry: int
     locos_for_color: int
 
@@ -52,7 +52,7 @@ class Route:
                 f"ferry_locos ({self.ferry_locos}) cannot exceed route length ({self.length})."
             )
 
-    # ── Predicates ───────────────────────────────────────────────────────────
+    #  Predicates 
 
     def is_claimed(self) -> bool:
         return self.owner_player is not None
@@ -66,7 +66,7 @@ class Route:
     def connects(self, city1: str, city2: str) -> bool:
         return {self.city_a, self.city_b} == {city1, city2}
 
-    # ── Display helpers ───────────────────────────────────────────────────────
+    #  Display helpers 
 
     @property
     def color_hex(self) -> str:
@@ -77,10 +77,10 @@ class Route:
         """None for gray routes; lowercase colour name otherwise."""
         return None if self.color is RouteColor.GRAY else self.color.name.lower()
 
-    # ── Card requirement ──────────────────────────────────────────────────────
+    #  Card requirement 
 
     def compute_card_slots(
-        self, color_count: int, loco_count: int
+            self, color_count: int, loco_count: int
     ) -> CardPlan | None:
         """
         Return a ``CardPlan`` if the route can be claimed with the given
@@ -95,20 +95,20 @@ class Route:
             if color_count + loco_count < self.length:
                 return None
             color_use = min(color_count, self.length)
-            loco_use  = self.length - color_use
+            loco_use = self.length - color_use
             return CardPlan(color_to_use=color_use, locos_for_ferry=0, locos_for_color=loco_use)
 
-        # ── Ferry route ───────────────────────────────────────────────────────
-        L             = self.ferry_locos
-        color_slots   = self.length - L
+        #  Ferry route 
+        L = self.ferry_locos
+        color_slots = self.length - L
 
-        locos_for_ferry  = min(loco_count, L)
-        locos_remaining  = loco_count - locos_for_ferry
-        ferry_shortage   = L - locos_for_ferry      # each missing loco costs 3 colour cards
+        locos_for_ferry = min(loco_count, L)
+        locos_remaining = loco_count - locos_for_ferry
+        ferry_shortage = L - locos_for_ferry  # each missing loco costs 3 colour cards
 
-        locos_for_color  = min(locos_remaining, color_slots)
-        color_uncovered  = color_slots - locos_for_color
-        color_needed     = color_uncovered + ferry_shortage * 3
+        locos_for_color = min(locos_remaining, color_slots)
+        color_uncovered = color_slots - locos_for_color
+        color_needed = color_uncovered + ferry_shortage * 3
 
         if color_count < color_needed:
             return None

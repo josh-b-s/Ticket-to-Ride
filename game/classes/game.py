@@ -31,24 +31,24 @@ class Game:
     """
 
     def __init__(self) -> None:
-        self.state  = GameState()
+        self.state = GameState()
         self.state.board = Board()
 
-        self.turns          = TurnManager(self.state)
-        self.cards          = CardService(self.state)
-        self.tickets        = TicketService(self.state)
-        self.scoring        = ScoringService(self.state)
+        self.turns = TurnManager(self.state)
+        self.cards = CardService(self.state)
+        self.tickets = TicketService(self.state)
+        self.scoring = ScoringService(self.state)
         self.routes_service = RouteService(self.state, self.cards, self.turns)
 
         self.on_game_end: Callable | None = None
 
-    # ── Single-hop shortcut (not a full proxy) ────────────────────────────────
+    #  Single-hop shortcut (not a full proxy) 
 
     @property
     def board(self):
         return self.state.board
 
-    # ── Queries ───────────────────────────────────────────────────────────────
+    #  Queries 
 
     def get_players(self) -> list[Player]:
         return self.state.players
@@ -65,7 +65,7 @@ class Game:
     def get_face_up_cards(self):
         return self.state.train_deck.get_face_up()
 
-    # ── Setup ─────────────────────────────────────────────────────────────────
+    #  Setup 
 
     def reset_players(self) -> None:
         """Clear the player list before a new setup phase."""
@@ -83,13 +83,13 @@ class Game:
         if len(self.state.players) < 2:
             raise ValueError("At least 2 players are required.")
 
-        self.state.board                = Board()
-        self.state.train_deck           = TrainDeck()
+        self.state.board = Board()
+        self.state.train_deck = TrainDeck()
         self.state.current_player_index = 0
         self.state.last_round_triggered = False
-        self.state.last_player_index    = None
-        self.state.game_over            = False
-        self.state.final_standings      = []
+        self.state.last_player_index = None
+        self.state.game_over = False
+        self.state.final_standings = []
 
         for p in self.state.players:
             p.score = 0
@@ -106,7 +106,7 @@ class Game:
                 if card:
                     p.train_cards.append(card)
 
-    # ── Turn flow ─────────────────────────────────────────────────────────────
+    #  Turn flow 
 
     def next_player(self) -> None:
         """Advance to the next player and trigger end-game if appropriate."""
@@ -114,13 +114,13 @@ class Game:
             return
         self.turns.next_player()
         if (
-            self.state.last_round_triggered
-            and self.state.current_player_index == self.state.last_player_index
-            and not self.state.game_over
+                self.state.last_round_triggered
+                and self.state.current_player_index == self.state.last_player_index
+                and not self.state.game_over
         ):
             self._end_game()
 
-    # ── Actions ───────────────────────────────────────────────────────────────
+    #  Actions 
 
     def draw_train_card_from_deck(self, player: Player):
         return self.cards.draw_from_deck(player)
@@ -142,14 +142,14 @@ class Game:
         return self.tickets.draw(count)
 
     def keep_destination_tickets(
-        self, player: Player, chosen, drawn, advance_turn: bool = True
+            self, player: Player, chosen, drawn, advance_turn: bool = True
     ):
         ok, reason = self.tickets.keep_tickets(player, chosen, drawn)
         if advance_turn:
             self.next_player()
         return ok, reason
 
-    # ── End game ──────────────────────────────────────────────────────────────
+    #  End game 
 
     def _standings_key(self, player: Player) -> tuple:
         return (player.score, player.completed_tickets, -player.trains, player.name.lower())
