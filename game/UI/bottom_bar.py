@@ -22,7 +22,7 @@ class BottomBar:
     def __init__(self, parent: tk.Frame) -> None:
         self._build(parent)
 
-    # ── Construction ──────────────────────────────────────────────────────────
+    #  Construction 
 
     def _build(self, parent: tk.Frame) -> None:
         inner = tk.Frame(parent, bg=BG_DARK, padx=14, pady=10)
@@ -133,7 +133,7 @@ class BottomBar:
         self._bind_mousewheel(outer,               self.ticket_canvas)
         self._bind_mousewheel(self.ticket_canvas,  self.ticket_canvas)
 
-    # ── Public update ─────────────────────────────────────────────────────────
+    #  Public update 
 
     def update(self, player) -> None:
         """Redraw the bottom bar for *player*."""
@@ -143,7 +143,7 @@ class BottomBar:
         self._update_cards(player.train_cards)
         self._update_tickets(player.destination_tickets)
 
-    # ── Header ────────────────────────────────────────────────────────────────
+    #  Header 
 
     def _update_header(self, player) -> None:
         color = _PLAYER_COLORS.get(player.color or "", ACCENT_GOLD)
@@ -157,7 +157,7 @@ class BottomBar:
             )
         )
 
-    # ── Train cards ───────────────────────────────────────────────────────────
+    #  Train cards 
 
     def _update_cards(self, train_cards: list) -> None:
         for w in self.card_frame.winfo_children():
@@ -190,7 +190,7 @@ class BottomBar:
                 counts[card.color] += 1
         return [(c, counts[c]) for c in order if counts[c] > 0]
 
-    # ── Destination tickets ───────────────────────────────────────────────────
+    #  Destination tickets 
 
     def _update_tickets(self, tickets: list) -> None:
         for w in self.ticket_frame.winfo_children():
@@ -210,7 +210,7 @@ class BottomBar:
                 anchor="w", justify="left", padx=6, pady=2,
             ).pack(fill="x", padx=3, pady=1)
 
-    # ── Mouse-wheel scrolling ─────────────────────────────────────────────────
+    #  Mouse-wheel scrolling 
 
     @staticmethod
     def _bind_mousewheel(widget: tk.Widget, canvas: tk.Canvas) -> None:

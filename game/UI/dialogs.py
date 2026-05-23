@@ -11,7 +11,7 @@ from game.UI.theme import (
 )
 from game.classes.route import RouteColor
 
-# ── Card colour helpers (shared with sidebar / bottom-bar) ────────────────────
+#  Card colour helpers (shared with sidebar / bottom-bar) 
 
 CARD_COLORS: dict[str, str] = {
     "blue":       RouteColor.BLUE.value,
@@ -36,7 +36,7 @@ def text_for_bg(hex_color: str) -> str:
     return "#000000" if lum > 160 else "#ffffff"
 
 
-# ── Private helpers ───────────────────────────────────────────────────────────
+#  Private helpers 
 
 def _dialog(root: tk.Tk, title: str) -> tk.Toplevel:
     win = tk.Toplevel(root)
@@ -81,7 +81,7 @@ def _btn(parent: tk.Widget, text: str, command, primary: bool = True) -> tk.Butt
     return b
 
 
-# ── Public dialogs ────────────────────────────────────────────────────────────
+#  Public dialogs 
 
 def ask_ticket_choice(
         root: tk.Tk,
@@ -192,7 +192,7 @@ def ask_card_draw(
         win.result = value
         win.destroy()
 
-    # ── Face-up cards ─────────────────────────────────────────────────────────
+    #  Face-up cards 
     tk.Label(body, text="FACE-UP CARDS", bg=BG_MAIN, fg=ACCENT_GOLD,
              font=FONT_LABEL, anchor="w").pack(fill="x", pady=(0, 6))
 
@@ -222,7 +222,7 @@ def ask_card_draw(
 
     tk.Frame(body, height=1, bg=GOLD_DIM).pack(fill="x", pady=8)
 
-    # ── Deck ──────────────────────────────────────────────────────────────────
+    #  Deck 
     tk.Label(body, text="DECK", bg=BG_MAIN, fg=ACCENT_GOLD,
              font=FONT_LABEL, anchor="w").pack(fill="x", pady=(0, 6))
 

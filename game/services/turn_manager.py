@@ -1,25 +1,28 @@
 from __future__ import annotations
 
-from game.services.game_state import GameState
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game.classes.game import Game
 
 
 class TurnManager:
-    def __init__(self, state: GameState) -> None:
-        self.state = state
+    def __init__(self, game: Game) -> None:
+        self.game = game
 
     def current_player(self):
-        if not self.state.players:
+        if not self.game.players:
             return None
-        return self.state.players[self.state.current_player_index]
+        return self.game.players[self.game.current_player_index]
 
     def next_player(self) -> None:
         """Advance the turn index only.
 
-        Last-round detection and _end_game() are handled by Game.next_player()
+        Last-round detection and _end_game() are handled by Game.next_player
         so scoring always runs before game_over is set.
         """
-        if not self.state.players:
+        if not self.game.players:
             return
-        self.state.current_player_index = (
-                                                  self.state.current_player_index + 1
-                                          ) % len(self.state.players)
+        self.game.current_player_index = (
+            self.game.current_player_index + 1
+        ) % len(self.game.players)

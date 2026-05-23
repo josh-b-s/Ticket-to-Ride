@@ -24,7 +24,7 @@ class GameScreen:
         self._deal_initial_tickets()
         self._refresh()
 
-    # ── Layout ────────────────────────────────────────────────────────────────
+    #  Layout 
 
     def _build_layout(self) -> None:
         outer = tk.Frame(self.root, bg=BG_MAIN)
@@ -53,15 +53,16 @@ class GameScreen:
         bottom_frame.pack(side="bottom", fill="x")
         bottom_frame.pack_propagate(False)
 
-        self.map_view  = MapView(board_frame, self.game,
-                                 on_route_click=self._on_route_click)
-        self.sidebar   = SidebarPanel(side_frame, callbacks={
+        self.map_view = MapView(
+            board_frame, self.game, on_route_click=self._on_route_click
+        )
+        self.sidebar = SidebarPanel(side_frame, callbacks={
             "on_draw_cards":   self._start_draw_action,
             "on_draw_tickets": self._start_ticket_draw,
         })
         self.bottom_bar = BottomBar(bottom_frame)
 
-    # ── UI refresh ────────────────────────────────────────────────────────────
+    #  UI refresh 
 
     def _refresh(self, message: str = "", hint: str = "") -> None:
         """Sync the full UI to the current game state."""
@@ -70,24 +71,26 @@ class GameScreen:
             current_player=self.game.current_player(),
             message=message,
             hint=hint,
-            game_over=self.game.state.game_over,
+            game_over=self.game.game_over,
         )
         self.bottom_bar.update(self.game.current_player())
 
-    # ── Draw train cards ──────────────────────────────────────────────────────
+    #  Draw train cards 
 
     def _start_draw_action(self) -> None:
-        if self.game.state.game_over:
+        if self.game.game_over:
             return
 
-        player         = self.game.current_player()
+        player = self.game.current_player()
         draws_remaining = 2
 
         while draws_remaining > 0:
             face_up = self.game.get_face_up_cards()
-            choice  = ask_card_draw(self.root, player.name, face_up, draws_remaining)
+            choice = ask_card_draw(
+                self.root, player.name, face_up, draws_remaining
+            )
 
-            if choice is None:           # "Cancel" — only shown on the first pick
+            if choice is None:  # Cancel — only available on the first pick
                 return
 
             if choice == "deck":
@@ -95,11 +98,10 @@ class GameScreen:
                 if card is None:
                     messagebox.showinfo("Deck", "No cards available.")
                     if draws_remaining == 2:
-                        return           # nothing drawn yet — abort the action
-                    break                # already drew one card — end turn
-
+                        return
+                    break
             else:
-                idx  = int(choice.split("_")[1])
+                idx = int(choice.split("_")[1])
                 card = self.game.draw_train_card_from_face_up(player, idx)
                 if card is None:
                     messagebox.showinfo("Error", "Could not draw that card.")
@@ -116,10 +118,10 @@ class GameScreen:
         self.game.next_player()
         self._refresh("Train cards drawn.")
 
-    # ── Draw destination tickets ──────────────────────────────────────────────
+    #  Draw destination tickets 
 
     def _start_ticket_draw(self) -> None:
-        if self.game.state.game_over:
+        if self.game.game_over:
             return
 
         tickets = self.game.draw_destination_tickets()
@@ -131,37 +133,46 @@ class GameScreen:
         chosen = ask_ticket_choice(self.root, player.name, tickets, min_keep=1)
 
         if not chosen:
-            # Player closed the dialog — return cards to the top of the deck
-            self.game.state.destination_deck = tickets + self.game.state.destination_deck
+            self.game.return_tickets_to_deck(tickets)
             return
 
-        self.game.keep_destination_tickets(player, chosen, tickets, advance_turn=True)
+        self.game.keep_destination_tickets(
+            player, chosen, tickets, advance_turn=True
+        )
         self.map_view.draw()
         self._refresh("Tickets chosen.")
 
-    # ── Deal initial tickets ──────────────────────────────────────────────────
+    #  Deal initial tickets 
 
     def _deal_initial_tickets(self) -> None:
         for player in self.game.get_players():
             drawn = self.game.draw_destination_tickets(3)
             if not drawn:
                 break
-            chosen = ask_ticket_choice(self.root, player.name, drawn, min_keep=2)
+            chosen = ask_ticket_choice(
+                self.root, player.name, drawn, min_keep=2
+            )
             if not chosen:
-                chosen = drawn[:min(2, len(drawn))]
-            self.game.keep_destination_tickets(player, chosen, drawn, advance_turn=False)
+                chosen = drawn[: min(2, len(drawn))]
+            self.game.keep_destination_tickets(
+                player, chosen, drawn, advance_turn=False
+            )
 
-    # ── Route click ───────────────────────────────────────────────────────────
+    #  Route click 
 
     def _on_route_click(self, route) -> None:
-        if self.game.state.game_over:
+        if self.game.game_over:
             return
 
         chosen_color = None
         if route.is_gray():
-            player   = self.game.current_player()
-            playable = self.game.available_colors_for_gray_route(player, route.length)
-            chosen_color = ask_gray_route_color(self.root, player.name, playable)
+            player = self.game.current_player()
+            playable = self.game.available_colors_for_gray_route(
+                player, route.length
+            )
+            chosen_color = ask_gray_route_color(
+                self.root, player.name, playable
+            )
             if not chosen_color:
                 return
 
@@ -174,14 +185,13 @@ class GameScreen:
         self.map_view.draw()
         self._refresh(result.reason)
 
-    # ── Game end ──────────────────────────────────────────────────────────────
+    #  Game end 
 
     def _on_game_end(self, route_lengths: dict) -> None:
         lines = ["Game Over!\n"]
 
-        standings = (
-            self.game.state.final_standings
-            or sorted(self.game.get_players(), key=lambda p: p.score, reverse=True)
+        standings = self.game.final_standings or sorted(
+            self.game.get_players(), key=lambda p: p.score, reverse=True
         )
 
         for p in standings:
@@ -194,9 +204,11 @@ class GameScreen:
         if not standings:
             lines.append("\nNo winner.")
         else:
-            top  = standings[0]
-            ties = [p for p in standings
-                    if self.game._standings_key(p) == self.game._standings_key(top)]
+            top = standings[0]
+            ties = [
+                p for p in standings
+                if self.game._standings_key(p) == self.game._standings_key(top)
+            ]
             lines.append(
                 f"\nWinner: {top.name}!" if len(ties) == 1
                 else "\nWinners (tie): " + ", ".join(p.name for p in ties)

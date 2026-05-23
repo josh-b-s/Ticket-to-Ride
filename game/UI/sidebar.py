@@ -24,7 +24,7 @@ class SidebarPanel:
         self._cbs = callbacks
         self._build(parent)
 
-    # ── Construction ──────────────────────────────────────────────────────────
+    #  Construction 
 
     def _build(self, parent: tk.Frame) -> None:
         self._section_header(parent, "Players")
@@ -68,7 +68,7 @@ class SidebarPanel:
             bg=BG_PANEL, fg=ACCENT_GOLD, anchor="w",
         ).pack(anchor="w", pady=(12, 4))
 
-    # ── Public update ─────────────────────────────────────────────────────────
+    #  Public update 
 
     def update(
             self,
@@ -84,7 +84,7 @@ class SidebarPanel:
         self._set_hint(hint)
         self._render_actions(game_over)
 
-    # ── Player list ───────────────────────────────────────────────────────────
+    #  Player list 
 
     def _refresh_players(self, players: list, current_player) -> None:
         for w in self.player_rows_frame.winfo_children():
@@ -108,7 +108,7 @@ class SidebarPanel:
         self.player_rows_frame.update_idletasks()
         self.player_canvas.config(height=len(players) * 38 + 8)
 
-    # ── Hint label ────────────────────────────────────────────────────────────
+    #  Hint label 
 
     def _set_hint(self, text: str) -> None:
         if text:
@@ -118,7 +118,7 @@ class SidebarPanel:
             self.hint_label.config(text="")
             self.hint_label.pack_forget()
 
-    # ── Action buttons ────────────────────────────────────────────────────────
+    #  Action buttons 
 
     def _render_actions(self, game_over: bool) -> None:
         for w in self.action_frame.winfo_children():

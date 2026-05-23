@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 import random
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game.classes.game import Game
 
 from game.classes.destination_ticket import DestinationTicket
 from game.classes.player import Player
-from game.services.game_state import GameState
 
 
 class TicketService:
-    def __init__(self, state: GameState) -> None:
-        self.state = state
+    def __init__(self, game: Game) -> None:
+        self.game = game
 
     def build_destination_deck(self) -> None:
-        # TODO: load from data file (e.g. tickets.json) to decouple data from code.
-        self.state.destination_deck = [
+        self.game.destination_deck = [
             DestinationTicket("King's Cross", "Waterloo", 5),
             DestinationTicket("Baker Street", "Big Ben", 5),
             DestinationTicket("Regent's Park", "Tower of London", 8),
@@ -35,25 +37,25 @@ class TicketService:
             DestinationTicket("Buckingham Palace", "The Charterhouse", 7),
             DestinationTicket("Baker Street", "Elephant & Castle", 8),
         ]
-        random.shuffle(self.state.destination_deck)
+        random.shuffle(self.game.destination_deck)
 
     def draw(self, count: int = 3) -> list[DestinationTicket]:
         drawn = []
         for _ in range(count):
-            if self.state.destination_deck:
-                drawn.append(self.state.destination_deck.pop())
+            if self.game.destination_deck:
+                drawn.append(self.game.destination_deck.pop())
         return drawn
 
     def keep_tickets(
-            self,
-            player: Player,
-            chosen: list[DestinationTicket],
-            drawn: list[DestinationTicket],
+        self,
+        player: Player,
+        chosen: list[DestinationTicket],
+        drawn: list[DestinationTicket],
     ) -> tuple[bool, str]:
         if not chosen:
             return False, "You must keep at least 1 ticket."
         for ticket in chosen:
             player.destination_tickets.append(ticket)
         returned = [t for t in drawn if t not in chosen]
-        self.state.destination_deck = returned + self.state.destination_deck
+        self.game.destination_deck = returned + self.game.destination_deck
         return True, "Tickets chosen."
