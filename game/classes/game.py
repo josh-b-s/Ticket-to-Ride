@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable
 
 from game.classes.board import Board
-from game.classes.destination_ticket import DestinationTicket
+from game.classes.destination_deck import DestinationDeck
 from game.classes.player import Player
 from game.classes.train_deck import TrainDeck
 from game.services.card_service import CardService
@@ -18,9 +18,9 @@ class Game:
     """
     Facade over the game services.
 
-    All mutable state lives directly on this class — no separate GameState
-    wrapper.  Services receive a reference to Game itself and access fields
-    via self.game.xyz, which is a single hop with no indirection overhead.
+    All mutable state lives directly on this class.  Services receive a
+    reference to Game and access fields via self.game.xyz — one hop, no
+    indirection, no separate state container.
     """
 
     def __init__(self) -> None:
@@ -28,7 +28,7 @@ class Game:
         self.players: list[Player] = []
         self.board: Board = Board()
         self.train_deck: TrainDeck | None = None
-        self.destination_deck: list[DestinationTicket] = []
+        self.destination_deck: DestinationDeck = DestinationDeck()
         self.current_player_index: int = 0
         self.last_round_triggered: bool = False
         self.last_player_index: int | None = None
@@ -68,7 +68,9 @@ class Game:
 
     def add_player(self, name: str) -> Player | None:
         name = name.strip()
-        if not name or any(p.name.lower() == name.lower() for p in self.players):
+        if not name or any(
+            p.name.lower() == name.lower() for p in self.players
+        ):
             return None
         player = Player(name)
         self.players.append(player)
@@ -80,6 +82,7 @@ class Game:
 
         self.board = Board()
         self.train_deck = TrainDeck()
+        self.destination_deck = DestinationDeck()
         self.current_player_index = 0
         self.last_round_triggered = False
         self.last_player_index = None
@@ -117,7 +120,7 @@ class Game:
     #  Actions 
 
     def return_tickets_to_deck(self, tickets: list) -> None:
-        self.destination_deck = tickets + self.destination_deck
+        self.destination_deck.return_to_bottom(tickets)
 
     def draw_train_card_from_deck(self, player: Player):
         return self.cards.draw_from_deck(player)
@@ -130,7 +133,9 @@ class Game:
     ) -> list[str]:
         return self.cards.available_colors_for_gray_route(player, route_length)
 
-    def claim_route(self, route, chosen_color: str | None = None) -> ValidationResult:
+    def claim_route(
+        self, route, chosen_color: str | None = None
+    ) -> ValidationResult:
         result = self.routes_service.claim_route(route, chosen_color)
         if result.ok:
             self.next_player()
