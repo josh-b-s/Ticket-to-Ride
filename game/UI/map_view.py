@@ -44,8 +44,12 @@ class MapView:
         self.parent = parent
         self.game = game
         self.on_route_click = on_route_click
-
-        self.bg_image_original = Image.open(_ASSETS / "map.png")
+        map_png = (
+            self.game.map_folder / "map.png"
+            if self.game.map_folder
+            else _ASSETS / "map.png"
+        )
+        self.bg_image_original = Image.open(map_png)
         self.bg_photo = None
 
         self.canvas = tk.Canvas(self.parent, bg="#E4C897", highlightthickness=0)

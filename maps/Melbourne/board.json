@@ -1,0 +1,254 @@
+{
+  "cities": {
+    "Flinders Street": [
+      230,
+      270
+    ],
+    "Southern Cross": [
+      155,
+      250
+    ],
+    "Melbourne Central": [
+      215,
+      195
+    ],
+    "Parliament": [
+      290,
+      210
+    ],
+    "North Melbourne": [
+      130,
+      140
+    ],
+    "Fitzroy": [
+      300,
+      120
+    ],
+    "Collingwood": [
+      365,
+      150
+    ],
+    "Richmond": [
+      330,
+      270
+    ],
+    "Hawthorn": [
+      400,
+      260
+    ],
+    "Camberwell": [
+      445,
+      370
+    ],
+    "South Yarra": [
+      300,
+      350
+    ],
+    "St Kilda": [
+      270,
+      408
+    ],
+    "Port Melbourne": [
+      138,
+      300
+    ],
+    "Docklands": [
+      90,
+      268
+    ],
+    "Footscray": [
+      48,
+      190
+    ],
+    "Williamstown": [
+      48,
+      368
+    ]
+  },
+  "routes": [
+    {
+      "a": "Flinders Street",
+      "b": "Southern Cross",
+      "length": 2,
+      "color": "BLUE"
+    },
+    {
+      "a": "Flinders Street",
+      "b": "Richmond",
+      "length": 2,
+      "color": "YELLOW"
+    },
+    {
+      "a": "Flinders Street",
+      "b": "South Yarra",
+      "length": 3,
+      "color": "GREEN"
+    },
+    {
+      "a": "Flinders Street",
+      "b": "Parliament",
+      "length": 2,
+      "color": "PINK"
+    },
+    {
+      "a": "Southern Cross",
+      "b": "Melbourne Central",
+      "length": 1,
+      "color": "ORANGE"
+    },
+    {
+      "a": "Southern Cross",
+      "b": "Docklands",
+      "length": 1,
+      "color": "GREEN"
+    },
+    {
+      "a": "Southern Cross",
+      "b": "Port Melbourne",
+      "length": 3,
+      "color": "BLUE",
+      "ferry_locos": 1
+    },
+    {
+      "a": "Melbourne Central",
+      "b": "Parliament",
+      "length": 2,
+      "color": "BLACK"
+    },
+    {
+      "a": "Melbourne Central",
+      "b": "Fitzroy",
+      "length": 2,
+      "color": "ORANGE"
+    },
+    {
+      "a": "Melbourne Central",
+      "b": "North Melbourne",
+      "length": 2,
+      "color": "PINK"
+    },
+    {
+      "a": "Melbourne Central",
+      "b": "Docklands",
+      "length": 2
+    },
+    {
+      "a": "Parliament",
+      "b": "Collingwood",
+      "length": 2,
+      "color": "BLUE"
+    },
+    {
+      "a": "Parliament",
+      "b": "Richmond",
+      "length": 2,
+      "color": "ORANGE"
+    },
+    {
+      "a": "Richmond",
+      "b": "Hawthorn",
+      "length": 2,
+      "color": "PINK"
+    },
+    {
+      "a": "Richmond",
+      "b": "South Yarra",
+      "length": 2,
+      "color": "BLACK"
+    },
+    {
+      "a": "Collingwood",
+      "b": "Hawthorn",
+      "length": 2,
+      "color": "ORANGE"
+    },
+    {
+      "a": "Hawthorn",
+      "b": "Camberwell",
+      "length": 2,
+      "color": "BLUE"
+    },
+    {
+      "a": "Camberwell",
+      "b": "South Yarra",
+      "length": 3,
+      "color": "BLACK"
+    },
+    {
+      "a": "Camberwell",
+      "b": "Richmond",
+      "length": 3,
+      "color": "GREEN"
+    },
+    {
+      "a": "South Yarra",
+      "b": "St Kilda",
+      "length": 2,
+      "color": "YELLOW"
+    },
+    {
+      "a": "St Kilda",
+      "b": "Port Melbourne",
+      "length": 2,
+      "color": "PINK",
+      "ferry_locos": 1
+    },
+    {
+      "a": "Port Melbourne",
+      "b": "Docklands",
+      "length": 2,
+      "color": "BLACK",
+      "ferry_locos": 1
+    },
+    {
+      "a": "Port Melbourne",
+      "b": "Williamstown",
+      "length": 2,
+      "color": "YELLOW",
+      "ferry_locos": 1
+    },
+    {
+      "a": "Docklands",
+      "b": "Footscray",
+      "length": 2,
+      "color": "ORANGE"
+    },
+    {
+      "a": "Footscray",
+      "b": "North Melbourne",
+      "length": 2,
+      "color": "BLUE"
+    },
+    {
+      "a": "Footscray",
+      "b": "Williamstown",
+      "length": 3,
+      "color": "GREEN"
+    },
+    {
+      "a": "Williamstown",
+      "b": "Docklands",
+      "length": 4,
+      "color": "PINK",
+      "ferry_locos": 2
+    },
+    {
+      "a": "North Melbourne",
+      "b": "Fitzroy",
+      "length": 3,
+      "color": "BLACK"
+    },
+    {
+      "a": "Fitzroy",
+      "b": "Collingwood",
+      "length": 1,
+      "color": "PINK"
+    },
+    {
+      "a": "Fitzroy",
+      "b": "Collingwood",
+      "length": 1,
+      "color": "YELLOW"
+    }
+  ]
+}

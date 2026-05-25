@@ -13,10 +13,8 @@ _LAST_ROUND_THRESHOLD = 2
 
 
 class RouteService:
-    def __init__(self, game: Game, card_service, turn_manager) -> None:
-        self.game = game
-        self.card_service = card_service
-        self.turn_manager = turn_manager
+    def __init__(self, game: Game) -> None:
+        self.game      = game
         self.validator = MoveValidator()
 
     def claim_route(
@@ -25,10 +23,10 @@ class RouteService:
         """
         Validate and apply a route claim for the current player.
 
-        Turn advancement is NOT done here — Game.claim_route owns that so
+        Turn advancement is NOT done here - Game.claim_route owns that so
         last-round detection always fires in the correct order.
         """
-        player = self.turn_manager.current_player()
+        player = self.game._turns.current_player()
         if player is None:
             return ValidationResult(ok=False, reason="No current player.")
 
@@ -42,7 +40,7 @@ class RouteService:
         if not result.ok:
             return result
 
-        cards = self.card_service.select_cards_for_route(
+        cards = self.game._cards.select_cards_for_route(
             player, route, chosen_color
         )
         if cards is None:
@@ -52,19 +50,19 @@ class RouteService:
                 hint="Please report this bug.",
             )
 
-        self.card_service.remove_cards_from_hand(player, cards)
+        self.game._cards.remove_cards_from_hand(player, cards)
         self.game.train_deck.discard(cards)
 
-        route.owner_player = player
-        player.trains -= route.length
-        player.score += _ROUTE_POINTS.get(route.length, route.length)
+        route.owner_player  = player
+        player.trains      -= route.length
+        player.score       += _ROUTE_POINTS.get(route.length, route.length)
 
         if (
             player.trains <= _LAST_ROUND_THRESHOLD
             and not self.game.last_round_triggered
         ):
             self.game.last_round_triggered = True
-            self.game.last_player_index = self.game.current_player_index
+            self.game.last_player_index    = self.game.current_player_index
 
         return ValidationResult(
             ok=True, reason=self._claim_message(route, player, chosen_color)
