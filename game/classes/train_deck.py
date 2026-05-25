@@ -9,8 +9,8 @@ _MAX_LOCO_FIX_ATTEMPTS = 10
 class TrainDeck:
     def __init__(self) -> None:
         self.draw_pile: list[TrainCard] = (
-                [TrainCard(c) for c in TrainCard.COLORS for _ in range(12)]
-                + [TrainCard("locomotive") for _ in range(14)]
+                [TrainCard(c) for c in TrainCard.COLORS for _ in range(6)]
+                + [TrainCard("locomotive") for _ in range(8)]
         )
         self.discard_pile: list[TrainCard] = []
         self.face_up: list[TrainCard | None] = []

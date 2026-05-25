@@ -106,7 +106,13 @@ class SidebarPanel:
                      bg=row_bg, fg=FG_MUTED, font=FONT_HINT).pack(side="right")
 
         self.player_rows_frame.update_idletasks()
-        self.player_canvas.config(height=len(players) * 38 + 8)
+
+        required_height = self.player_rows_frame.winfo_reqheight()
+
+        self.player_canvas.config(height=required_height)
+        self.player_canvas.config(
+            scrollregion=self.player_canvas.bbox("all")
+        )
 
     #  Hint label 
 

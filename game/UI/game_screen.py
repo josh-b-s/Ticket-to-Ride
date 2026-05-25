@@ -146,11 +146,11 @@ class GameScreen:
 
     def _deal_initial_tickets(self) -> None:
         for player in self.game.get_players():
-            drawn = self.game.draw_destination_tickets(3)
+            drawn = self.game.draw_destination_tickets()
             if not drawn:
                 break
             chosen = ask_ticket_choice(
-                self.root, player.name, drawn, min_keep=2
+                self.root, player.name, drawn, min_keep=1
             )
             if not chosen:
                 chosen = drawn[: min(2, len(drawn))]

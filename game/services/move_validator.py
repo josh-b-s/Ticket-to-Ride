@@ -49,7 +49,7 @@ class MoveValidator:
             if {r.city_a, r.city_b} == {route.city_a, route.city_b}
         ]
 
-        if player_count <= 3 and any(r.is_claimed() for r in same_routes):
+        if player_count == 2 and any(r.is_claimed() for r in same_routes):
             return ValidationResult(
                 ok=False,
                 reason="Route blocked in a 2–3 player game.",

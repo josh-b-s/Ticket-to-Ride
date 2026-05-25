@@ -10,7 +10,7 @@ from game.classes.destination_ticket import DestinationTicket
 from game.classes.route import Route, RouteColor
 
 # Tickets whose shortest-path distance falls below this are too trivial.
-_MIN_TICKET_DISTANCE = 3
+_MIN_TICKET_DISTANCE = 5
 # How many tickets to generate per game session.
 _TICKET_COUNT = 20
 

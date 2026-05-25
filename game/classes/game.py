@@ -89,17 +89,10 @@ class Game:
         self.game_over = False
         self.final_standings = []
 
-        for p in self.players:
-            p.score = 0
-            p.trains = 45
-            p.train_cards.clear()
-            p.destination_tickets.clear()
-            p.completed_tickets = 0
-
         self.tickets.build_destination_deck()
 
         for p in self.players:
-            for _ in range(4):
+            for _ in range(2):
                 card = self.train_deck.draw()
                 if card:
                     p.train_cards.append(card)
@@ -141,7 +134,7 @@ class Game:
             self.next_player()
         return result
 
-    def draw_destination_tickets(self, count: int = 3):
+    def draw_destination_tickets(self, count: int = 2):
         return self.tickets.draw(count)
 
     def keep_destination_tickets(

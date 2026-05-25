@@ -5,7 +5,7 @@ class Player:
     def __init__(self, name: str) -> None:
         self.name = name
         self.score: int = 0
-        self.trains: int = 45
+        self.trains: int = 17
         self.train_cards: list = []
         self.destination_tickets: list = []
         self.color: str | None = None  # plain string key into theme._PLAYER_COLORS
