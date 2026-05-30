@@ -207,7 +207,7 @@ class GameScreen:
             top = standings[0]
             ties = [
                 p for p in standings
-                if self.game._standings_key(p) == self.game._standings_key(top)
+                if self.game.standings_key(p) == self.game.standings_key(top)
             ]
             lines.append(
                 f"\nWinner: {top.name}!" if len(ties) == 1

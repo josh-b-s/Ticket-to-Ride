@@ -89,13 +89,6 @@ class Game:
         self.game_over            = False
         self.final_standings      = []
 
-        for p in self.players:
-            p.score               = 0
-            p.trains              = 17
-            p.train_cards.clear()
-            p.destination_tickets.clear()
-            p.completed_tickets   = 0
-
         self._tickets.build_destination_deck()
 
         for p in self.players:
