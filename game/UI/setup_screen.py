@@ -14,8 +14,16 @@ from game.UI.theme import (
     FONT_ENTRY, FONT_HERO, FONT_HINT, FONT_LABEL, FONT_BODY, GOLD_DIM,
     PLAYER_SLOTS,
 )
+import sys
 
-_MAPS_DIR = Path(__file__).parent.parent.parent / "maps"
+def _get_maps_dir() -> Path:
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe
+        return Path(sys.executable).parent / "maps"
+    # Running as normal Python script
+    return Path(__file__).parent.parent / "maps"
+
+_MAPS_DIR = _get_maps_dir()
 
 # Map card dimensions
 _CARD_W = 180
