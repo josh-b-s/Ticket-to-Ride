@@ -14,13 +14,7 @@
 
 ## How to Run
 
-### Option 1 – Executable (Windows x86-64)
-1. Navigate to the `game/` folder
-2. Double-click `TicketToRide.exe`
-
-The `maps/` folder is included alongside the executable. No installation required.
-
-### Option 2 – Run from Source (Windows / macOS / Linux)
+### Option 1 – Run from Source (Windows / macOS / Linux)
 
 **Requirements:** Python 3.10 or higher, Pillow
 
@@ -39,7 +33,7 @@ cd project1
 python game\main.py
 ```
 
-### Option 3 – Build Executable from Source
+### Option 2 – Build Executable from Source
 
 1. Install PyInstaller:
 ```
