@@ -14,7 +14,13 @@
 
 ## How to Run
 
-### Option 1 – Run from Source (Windows / macOS / Linux)
+### Option 1 – Executable (Windows x86-64)
+1. Unzip `Sprint3_Josh_Brian_Saputra_executable.zip`
+2. Double-click `TicketToRide.exe`
+
+Maps are pre-included in the zip alongside the executable. No additional setup required.
+
+### Option 2 – Run from Source (Windows / macOS / Linux)
 
 **Requirements:** Python 3.10 or higher, Pillow
 
@@ -33,7 +39,7 @@ cd project1
 python game\main.py
 ```
 
-### Option 2 – Build Executable from Source
+### Option 3 – Build Executable from Source
 
 1. Install PyInstaller:
 ```
@@ -81,7 +87,6 @@ The map will appear automatically on the setup screen. Destination tickets are g
 project1/
 ├── game/
 │   ├── main.py                  # Entry point
-│   ├── TicketToRide.exe         # Windows executable (x86-64)
 │   │
 │   ├── classes/
 │   │   ├── board.py             # Map loading from board.json + ticket generation
@@ -110,11 +115,14 @@ project1/
 │   │   ├── sidebar.py           # Player roster and action buttons
 │   │   └── theme.py             # Shared colour and font constants
 │   │
-│   └── maps/
-│       ├── London/
-│       │   ├── board.json       # London map data
-│       │   └── map.png          # London map image
-│       └── Melbourne/
-│           ├── board.json       # Melbourne map data
-│           └── map.png          # Melbourne map image
+│   ├── maps/
+│   │   ├── London/
+│   │   │   ├── board.json       # London map data
+│   │   │   └── map.png          # London map image
+│   │   └── Melbourne/
+│   │       ├── board.json       # Melbourne map data
+│   │       └── map.png          # Melbourne map image
+│   │
+│   ├── tests/
+│   │   └── test_core.py         # Unit tests for Route, MoveValidator, ValidationResult
 ```
